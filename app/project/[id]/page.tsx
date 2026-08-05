@@ -1,12 +1,17 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
+import { DraftStep } from '@/components/draft-step'
+import { GapAnalysisStep } from '@/components/gap-analysis-step'
 import { IntakeStep } from '@/components/intake-step'
 import { MethodCheckStep } from '@/components/method-check-step'
 import { TriageStep } from '@/components/triage-step'
 import { WorkflowProgress } from '@/components/workflow-progress'
 import { getSession } from '@/lib/auth/session'
 import { getStore } from '@/lib/data'
+import { assembleDraft } from '@/lib/draft/assemble'
+import { isAnthropicConfigured } from '@/lib/env'
+import { analyseGaps } from '@/lib/gaps/analyse'
 import { visibleSections } from '@/lib/intake/questions'
 import { STATE_DEFINITIONS } from '@/lib/workflow/states'
 
@@ -126,15 +131,32 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
           answers={answers}
           missing={missing}
         />
+      ) : project.state === 'draft' ? (
+        <DraftStep
+          projectId={project.id}
+          draft={assembleDraft({ project, answers })}
+          modelConnected={isAnthropicConfigured}
+        />
+      ) : project.state === 'gap_analysis' ? (
+        <GapAnalysisStep
+          projectId={project.id}
+          findings={analyseGaps(project, answers)}
+          modelConnected={isAnthropicConfigured}
+        />
       ) : (
-        <div className="rounded-lg border border-dashed border-slate-300 bg-white p-10 text-center">
-          <p className="text-sm font-medium text-slate-900">
-            {definition.label} is not built yet
+        <div className="rounded-lg border border-slate-200 bg-white p-10 text-center">
+          <p className="text-sm font-medium text-slate-900">Ready for you to review</p>
+          <p className="mx-auto mt-2 max-w-lg text-sm leading-relaxed text-slate-600">
+            Download the document, check it, complete anything the tool left to you, and submit it
+            yourself. Research Ethics Board Assistant does not submit applications and does not
+            decide whether research is approved.
           </p>
-          <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-600">
-            Triage and intake are working. This step is next, along with draft assembly and gap
-            analysis. Your answers so far are still here.
-          </p>
+          <a
+            href={`/project/${project.id}/export`}
+            className="mt-6 inline-block rounded-md bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
+          >
+            Download draft (.docx)
+          </a>
         </div>
       )}
 

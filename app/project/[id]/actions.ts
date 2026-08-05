@@ -278,6 +278,52 @@ export async function advanceToDraft(formData: FormData) {
   redirect(`/project/${projectId}`)
 }
 
+/**
+ * The remaining forward steps. Each is a separate button the researcher presses,
+ * for the same reason as every other transition in this file.
+ */
+export async function advanceWorkflow(formData: FormData) {
+  const session = await getSession()
+  if (!session) redirect('/sign-in')
+
+  const projectId = String(formData.get('projectId') ?? '')
+  const to = String(formData.get('to') ?? '')
+
+  const store = getStore()
+  const project = await store.getProject(projectId, session.userId)
+  if (!project) redirect('/dashboard')
+
+  if (to !== 'gap_analysis' && to !== 'complete') {
+    // Every other transition has its own action with its own preconditions.
+    // Routing them through a generic one would be a way around those checks.
+    redirect(`/project/${projectId}`)
+  }
+
+  const reason =
+    to === 'gap_analysis'
+      ? 'Researcher moved to gap analysis'
+      : 'Researcher marked the draft ready to review'
+
+  assertValidTransition({
+    projectId,
+    from: project.state,
+    to,
+    actorId: session.userId,
+    reason,
+  })
+
+  await store.recordTransition({
+    projectId,
+    from: project.state,
+    to,
+    actorId: session.userId,
+    reason,
+  })
+  await store.updateProject(projectId, session.userId, { state: to })
+
+  redirect(`/project/${projectId}`)
+}
+
 function buildRoutingNote(flags: { indigenous: boolean; communityEngaged: boolean }): string | null {
   if (!flags.indigenous && !flags.communityEngaged) return null
 
