@@ -22,8 +22,11 @@ Internal test build: August 10, 2026. Phase 1 handoff: September 1, 2026.
 app/                  Next.js App Router
   (auth)/             sign in, magic link callback, session actions
   dashboard/          project list, behind the auth boundary
-components/           shared UI, e.g. the workflow progress track
+  project/[id]/       the guided workflow
+components/           shared UI: app shell, progress track, question fields
 lib/
+  data/               the store interface, in-memory and Supabase implementations
+  intake/             the question set, keyed to form sections
   anthropic/          redaction gate and the single model-call chokepoint
   auth/               session handling
   form/               the Dalhousie form structure, section numbers and word limits
@@ -82,9 +85,13 @@ Built:
   and the manifest
 - Placeholder auth boundary and an empty dashboard
 
+- Triage and intake: the guided question sequence, section by section, with the
+  Indigenous and community-engaged flags routing the affected sections to a
+  person
+
 Not built yet, in build-sequence order:
 
-- The workflow screens: triage, intake, method check, draft, gap analysis
+- The remaining workflow screens: method check, draft, gap analysis
 - Text extraction for PDF and DOCX, and embedding generation
 - Draft assembly and .docx export in the Dalhousie form layout
 - The three AI-disclosure surfaces
