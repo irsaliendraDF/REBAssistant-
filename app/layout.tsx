@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "REB Assistant",
+  title: "Research Ethics Board Assistant",
   description:
     "Prepare a Dalhousie Research Ethics Board application. Drafting and gap analysis support. The Board makes every ethics determination.",
 };

@@ -20,7 +20,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-4">
           <div>
-            <p className="text-sm font-semibold text-slate-900">REB Assistant</p>
+            <p className="text-sm font-semibold text-slate-900">Research Ethics Board Assistant</p>
             <p className="text-xs text-slate-500">Dalhousie University</p>
           </div>
           <div className="flex items-center gap-4">

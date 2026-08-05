@@ -32,6 +32,6 @@ create table if not exists gap_findings (
 );
 
 comment on table gap_findings is
-  'Advisory gap analysis. Guardrail 6: the app never makes the ethics determination, the REB does.';
+  'Advisory gap analysis. Guardrail 6: the app never makes the ethics determination, the Research Ethics Board does.';
 
 create index if not exists gap_findings_project_idx on gap_findings (project_id, resolved);

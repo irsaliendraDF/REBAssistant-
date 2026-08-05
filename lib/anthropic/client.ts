@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { NotConfiguredError, env, isAnthropicConfigured } from '@/lib/env'
+import { logRedactionEvent } from './audit'
 import { type RedactionHit, redactAll } from './redaction'
 
 /**
@@ -16,8 +17,9 @@ import { type RedactionHit, redactAll } from './redaction'
  * review question: importing this from a client component fails the build, so
  * the API key cannot reach the browser.
  *
- * The Anthropic SDK is intentionally not installed yet. The key arrives in week
- * three, and until then this function refuses cleanly rather than pretending.
+ * The Anthropic SDK is intentionally not installed yet. The key arrives at the
+ * hosted switch, and until then this function refuses cleanly rather than
+ * pretending.
  */
 
 export interface ModelCallInput {
@@ -28,6 +30,9 @@ export interface ModelCallInput {
   maxTokens?: number
   /** Known-legitimate strings that should survive the gate, e.g. the researcher's own email. */
   allow?: string[]
+  /** Recorded against the audit event so a refusal can be traced to a project. */
+  projectId?: string
+  userId?: string
 }
 
 export type ModelCallResult =
@@ -53,6 +58,17 @@ export async function callModel(input: ModelCallInput): Promise<ModelCallResult>
     { allow: input.allow },
   )
 
+  // Audited before the call is attempted, so a refusal is recorded even though
+  // nothing was ever sent. Awaited but non-throwing: see lib/anthropic/audit.ts.
+  await logRedactionEvent({
+    callPurpose: input.purpose,
+    outcome: gate.outcome,
+    hits: gate.hits,
+    projectId: input.projectId,
+    userId: input.userId,
+    modelVersion: env.anthropic.model,
+  })
+
   if (gate.outcome === 'refused') {
     return {
       ok: false,
@@ -66,9 +82,9 @@ export async function callModel(input: ModelCallInput): Promise<ModelCallResult>
     throw new NotConfiguredError('The Anthropic API', ['ANTHROPIC_API_KEY'])
   }
 
-  // TODO (week 3, hosted switch): install @anthropic-ai/sdk and issue the request
-  // here using `gate.texts`, never `input`. The redacted copies are the only
-  // strings that may leave this process.
+  // TODO (hosted switch): install @anthropic-ai/sdk and issue the request here
+  // using `gate.texts`, never `input`. The redacted copies are the only strings
+  // that may leave this process.
   throw new NotConfiguredError('The Anthropic API client', ['ANTHROPIC_API_KEY'])
 }
 

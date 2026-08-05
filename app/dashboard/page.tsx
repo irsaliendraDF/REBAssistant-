@@ -2,7 +2,7 @@ import { isSupabaseConfigured } from '@/lib/env'
 import { PROJECT_STATES, STATE_DEFINITIONS } from '@/lib/workflow/states'
 
 export const metadata = {
-  title: 'Your applications | REB Assistant',
+  title: 'Your applications | Research Ethics Board Assistant',
 }
 
 /**
@@ -48,7 +48,7 @@ export default async function DashboardPage() {
       ) : null}
 
       <p className="border-t border-slate-200 pt-6 text-xs leading-relaxed text-slate-500">
-        REB Assistant helps you prepare an application. It does not review, approve or exempt
+        Research Ethics Board Assistant helps you prepare an application. It does not review, approve or exempt
         research. Every ethics determination is made by the Research Ethics Board.
       </p>
     </div>

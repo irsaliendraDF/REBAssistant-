@@ -1,6 +1,6 @@
 -- Knowledge base: source documents and their embedded chunks.
 --
--- Source material is the Dalhousie REB form, its consent and recruitment
+-- Source material is the Dalhousie Research Ethics Board form, its consent and recruitment
 -- templates, the application guidelines, and TCPS2. Chunks carry a citation back
 -- to their source document and location so the app can always say where a piece
 -- of guidance came from.
@@ -36,7 +36,7 @@ create table if not exists kb_chunks (
   token_count    integer,
 
   -- Citation payload. Every chunk can name its own source.
-  citation       text,                 -- e.g. 'TCPS2 Article 5.1' or 'Dalhousie REB form, s. 2.7.5'
+  citation       text,                 -- e.g. 'TCPS2 Article 5.1' or 'Dalhousie Research Ethics Board form, s. 2.7.5'
   page_number    integer,
   form_section   text,                 -- populated where a chunk maps to a form section
 

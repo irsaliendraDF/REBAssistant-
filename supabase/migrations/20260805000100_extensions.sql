@@ -1,4 +1,4 @@
--- Extensions required by the REB Assistant schema.
+-- Extensions required by the Research Ethics Board Assistant schema.
 -- pgcrypto: gen_random_uuid() for primary keys.
 -- vector:   pgvector, for knowledge base embedding search.
 

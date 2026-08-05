@@ -35,10 +35,17 @@ export const env = {
     url: optional('NEXT_PUBLIC_APP_URL') ?? 'http://localhost:3000',
     /**
      * Placeholder auth for the local phase, replaced by Supabase magic link when
-     * the hosted project is provisioned. Must be false in any deployed
-     * environment.
+     * the hosted project is provisioned.
+     *
+     * Off by default in production, on by default everywhere else. An unset
+     * variable used to mean "on", which meant the Vercel deployment shipped with
+     * a sign-in anyone could click through. A convenience default has to fail
+     * closed in the one environment that is public.
      */
-    usePlaceholderAuth: optional('NEXT_PUBLIC_USE_PLACEHOLDER_AUTH') !== 'false',
+    usePlaceholderAuth:
+      optional('NEXT_PUBLIC_USE_PLACEHOLDER_AUTH') === undefined
+        ? process.env.NODE_ENV !== 'production'
+        : optional('NEXT_PUBLIC_USE_PLACEHOLDER_AUTH') === 'true',
   },
 } as const
 

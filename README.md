@@ -1,4 +1,4 @@
-# REB Assistant
+# Research Ethics Board Assistant
 
 A web application that helps researchers at Dalhousie University prepare Research
 Ethics Board applications. The researcher signs in, works through a guided
@@ -6,9 +6,9 @@ sequence, and comes out with a completed first draft plus an analysis of what is
 still missing.
 
 **Phase 1, minimum viable product.** Deliberately narrow: Dalhousie only,
-academic researchers only, REB applications only.
+academic researchers only, Research Ethics Board applications only.
 
-**REB Assistant does not make ethics determinations.** It drafts and it flags
+**Research Ethics Board Assistant does not make ethics determinations.** It drafts and it flags
 gaps. The Research Ethics Board decides.
 
 Client: Future Civics. Built by DigitalFlow Consulting Inc.
@@ -49,14 +49,21 @@ Nothing else is required right now. There is no database connected, no Anthropic
 key and no hosted account, and the app is written to say so plainly rather than
 fail. Copy `.env.local.example` to `.env.local` when those arrive.
 
+Tests:
+
+```bash
+npm test
+```
+
 ## Current state
 
 Built:
 
 - Project scaffold, Next.js App Router with TypeScript and Tailwind
 - Full schema as version-controlled SQL migrations, including row level security
-- The redaction gate, and the single chokepoint every model call must pass
-  through
+- The redaction gate, the single chokepoint every model call must pass through,
+  its `redaction_events` audit trail, and 61 tests covering both misses and
+  false positives
 - The workflow state machine, with transitions that cannot fire without an actor
 - The Dalhousie form structure, section numbers and word limits, in one file
 - Knowledge base ingestion scan, hashing, content-hash de-duplication, chunking

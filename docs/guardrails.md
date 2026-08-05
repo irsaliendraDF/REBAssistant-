@@ -22,6 +22,32 @@ code a build error rather than a review question.
 card and medical record numbers, dates of birth. Their presence means something
 went wrong upstream, and stripping them quietly would hide that.
 
+**Tuned against false positives, on purpose.** A refusal blocks the researcher's
+work, and researchers who hit spurious refusals learn to route around the tool,
+which is a worse outcome than the one the gate exists to prevent. So an
+unlabelled nine-digit group is only read as a social insurance number if it also
+passes the Luhn checksum, which real ones do and arbitrary numeric data usually
+does not. A labelled one is refused regardless, because the label is the signal.
+The street-address detector is case sensitive for the same reason: with the
+ignore-case flag it also matched prose like "a 5 minute walk down the street".
+
+**What it does not catch: participant names.** No regular expression can separate
+"we interviewed Sarah Chen" from "as Chen (2019) argues" or from "Dalhousie
+University". Names are handled by never asking the researcher for them, not by
+the gate.
+
+**Audited.** Every pass writes a `redaction_events` row through
+[`lib/anthropic/audit.ts`](../lib/anthropic/audit.ts), including refusals, where
+nothing was sent. Categories and counts only, never the matched text. The audit
+write never throws: a database hiccup must not become a reason the gate did not
+run, or a broken feature the researcher works around.
+
+**Tested.** [`lib/anthropic/redaction.test.ts`](../lib/anthropic/redaction.test.ts),
+run with `npm test`. Covers detection, the false-positive cases above, the
+boundary where a phone number's first nine digits look like a social insurance
+number, idempotency, allow-list handling, and refusal propagation across a
+multi-string call.
+
 **Do not** add a second module that calls the API.
 
 ## 2. No participant data at rest
@@ -89,7 +115,7 @@ The honesty chain runs the length of the project:
   inputs.
 - **(b)** Generated participant consent forms. Participants are told an
   AI-assisted system handles their data.
-- **(c)** The REB application itself. The Board is told it was prepared with AI
+- **(c)** The Research Ethics Board application itself. The Board is told it was prepared with AI
   assistance.
 
 **Status:** not written yet, scheduled for week 3. Wording will be clearly marked

@@ -51,7 +51,7 @@ export const STATE_DEFINITIONS: Record<ProjectState, StateDefinition> = {
     state: 'method_check',
     label: 'Method check',
     description:
-      'REB Assistant states how it has understood your methodology. You confirm it, correct it, or reject it. Rejecting sends the project back to intake.',
+      'Research Ethics Board Assistant states how it has understood your methodology. You confirm it, correct it, or reject it. Rejecting sends the project back to intake.',
     // Rejection goes backwards. This is the only state with a backward move.
     allowedNext: ['draft', 'intake'],
   },
@@ -73,7 +73,7 @@ export const STATE_DEFINITIONS: Record<ProjectState, StateDefinition> = {
     state: 'complete',
     label: 'Ready to review',
     description:
-      'Your draft package is ready to download, review and submit yourself. REB Assistant does not submit it, and does not decide whether it will be approved.',
+      'Your draft package is ready to download, review and submit yourself. Research Ethics Board Assistant does not submit it, and does not decide whether it will be approved.',
     allowedNext: [],
   },
 }

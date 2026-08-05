@@ -1,6 +1,6 @@
 -- drafts
 --
--- Generated sections of the REB application, versioned, each mapped onto the
+-- Generated sections of the Research Ethics Board application, versioned, each mapped onto the
 -- Dalhousie form's own section numbering (Section 1, and 2.1 through 2.15).
 --
 -- ai_generated is not null by design. Guardrail 5: every draft record states

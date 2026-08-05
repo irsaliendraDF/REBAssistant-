@@ -1,5 +1,5 @@
 /**
- * The Dalhousie REB application form for prospective research, as a structure.
+ * The Dalhousie Research Ethics Board application form for prospective research, as a structure.
  *
  * This is the target output shape and the spine of the whole build. Draft
  * assembly, intake questions and gap findings all key off these section numbers.
@@ -61,7 +61,7 @@ export const FORM_SECTIONS: FormSection[] = [
     title: 'Research involving Indigenous Peoples',
     generation: 'routed_to_human',
     routingNote:
-      'Research involving Indigenous Peoples is governed by TCPS2 Chapter 9 and by community protocols that a drafting tool is not positioned to interpret. REB Assistant will not draft this section. Please speak with the Research Ethics Office and the relevant community before continuing.',
+      'Research involving Indigenous Peoples is governed by TCPS2 Chapter 9 and by community protocols that a drafting tool is not positioned to interpret. Research Ethics Board Assistant will not draft this section. Please speak with the Research Ethics Office and the relevant community before continuing.',
   },
   { number: '2.14', title: 'Clinical trials', generation: 'ai_assisted' },
   { number: '2.15', title: 'Personal health information', generation: 'ai_assisted' },

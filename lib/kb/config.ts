@@ -33,12 +33,12 @@ export const DOC_TYPE_RULES: { match: RegExp; docType: DocType; citationLabel: s
   {
     match: /application-human-ethics-prospective-research/i,
     docType: 'form',
-    citationLabel: 'Dalhousie REB application form (prospective research)',
+    citationLabel: 'Dalhousie Research Ethics Board application form (prospective research)',
   },
   {
     match: /reb-application-guidelines/i,
     docType: 'guideline',
-    citationLabel: 'Dalhousie REB application guidelines',
+    citationLabel: 'Dalhousie Research Ethics Board application guidelines',
   },
   { match: /^consent-form/i, docType: 'template', citationLabel: 'Consent form template' },
   {
