@@ -1,5 +1,5 @@
+import { WorkflowProgress } from '@/components/workflow-progress'
 import { isSupabaseConfigured } from '@/lib/env'
-import { PROJECT_STATES, STATE_DEFINITIONS } from '@/lib/workflow/states'
 
 export const metadata = {
   title: 'Your applications | Research Ethics Board Assistant',
@@ -23,18 +23,7 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      <ol className="flex flex-wrap gap-2">
-        {PROJECT_STATES.map((state, index) => (
-          <li
-            key={state}
-            className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600"
-            title={STATE_DEFINITIONS[state].description}
-          >
-            <span className="font-mono text-[10px] text-slate-400">{index + 1}</span>
-            {STATE_DEFINITIONS[state].label}
-          </li>
-        ))}
-      </ol>
+      <WorkflowProgress />
 
       {projects.length === 0 ? (
         <div className="rounded-lg border border-dashed border-slate-300 bg-white p-10 text-center">

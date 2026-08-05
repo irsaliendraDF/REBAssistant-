@@ -111,3 +111,17 @@ export function assertValidTransition(request: TransitionRequest): void {
 export function stateIndex(state: ProjectState): number {
   return PROJECT_STATES.indexOf(state)
 }
+
+/**
+ * How far along the track to fill, as a percentage.
+ *
+ * The fill reaches a step's marker when the project has entered that step, not
+ * when it has finished it, so a project in `triage` shows an empty track rather
+ * than a sixth of one. No project at all is also empty.
+ */
+export function progressPercent(current?: ProjectState): number {
+  if (!current) return 0
+  const index = stateIndex(current)
+  if (index <= 0) return 0
+  return (index / (PROJECT_STATES.length - 1)) * 100
+}

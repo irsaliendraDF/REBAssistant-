@@ -22,6 +22,7 @@ Internal test build: August 10, 2026. Phase 1 handoff: September 1, 2026.
 app/                  Next.js App Router
   (auth)/             sign in, magic link callback, session actions
   dashboard/          project list, behind the auth boundary
+components/           shared UI, e.g. the workflow progress track
 lib/
   anthropic/          redaction gate and the single model-call chokepoint
   auth/               session handling
