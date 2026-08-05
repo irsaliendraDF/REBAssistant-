@@ -33,10 +33,10 @@ export function WorkflowProgress({ current }: { current?: ProjectState }) {
         {/* The track sits behind the markers, spanning first centre to last. */}
         <div
           aria-hidden
-          className="absolute left-[8.333%] right-[8.333%] top-3.5 h-0.5 rounded-full bg-slate-200"
+          className="absolute left-[8.333%] right-[8.333%] top-3.5 h-0.5 rounded-full bg-surface-2"
         >
           <div
-            className="h-full rounded-full bg-slate-900 transition-[width] duration-500"
+            className="h-full rounded-full bg-forest transition-[width] duration-500"
             style={{ width: `${fillPercent}%` }}
           />
         </div>
@@ -62,10 +62,10 @@ export function WorkflowProgress({ current }: { current?: ProjectState }) {
                 className={[
                   'flex h-7 w-7 items-center justify-center rounded-full border text-xs font-medium',
                   isComplete
-                    ? 'border-slate-900 bg-slate-900 text-white'
+                    ? 'border-forest bg-forest text-white'
                     : isCurrent
-                      ? 'border-slate-900 bg-white text-slate-900 ring-4 ring-slate-900/10'
-                      : 'border-slate-300 bg-white text-slate-400',
+                      ? 'border-forest bg-white text-ink ring-4 ring-olive/40'
+                      : 'border-line bg-white text-faint',
                 ].join(' ')}
               >
                 {isComplete ? (
@@ -89,7 +89,7 @@ export function WorkflowProgress({ current }: { current?: ProjectState }) {
               <span
                 className={[
                   'text-xs leading-snug',
-                  isComplete || isCurrent ? 'font-medium text-slate-900' : 'text-slate-500',
+                  isComplete || isCurrent ? 'font-medium text-ink' : 'text-muted',
                 ].join(' ')}
               >
                 {definition.label}

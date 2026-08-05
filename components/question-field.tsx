@@ -18,23 +18,23 @@ export function QuestionField({
   const describedBy = question.help ? `${question.key}-help` : undefined
 
   return (
-    <div className={missing ? 'rounded-md border-l-2 border-red-400 pl-4' : undefined}>
+    <div className={missing ? 'rounded-md border-l-2 border-alert pl-4' : undefined}>
       <label
         htmlFor={question.key}
-        className="block text-sm font-medium leading-relaxed text-slate-900"
+        className="block text-sm font-medium leading-relaxed text-ink"
       >
         {question.label}
-        {question.required ? <span className="ml-1 text-slate-400">*</span> : null}
+        {question.required ? <span className="ml-1 text-faint">*</span> : null}
       </label>
 
       {question.help ? (
-        <p id={describedBy} className="mt-1 text-xs leading-relaxed text-slate-500">
+        <p id={describedBy} className="mt-1 text-xs leading-relaxed text-muted">
           {question.help}
         </p>
       ) : null}
 
       {missing ? (
-        <p className="mt-1 text-xs font-medium text-red-600">
+        <p className="mt-1 text-xs font-medium text-alert">
           This one is needed before you can move on.
         </p>
       ) : null}
@@ -47,14 +47,14 @@ export function QuestionField({
               {question.options?.map((option) => (
                 <label
                   key={option.value}
-                  className="flex cursor-pointer items-start gap-2.5 text-sm leading-relaxed text-slate-700"
+                  className="flex cursor-pointer items-start gap-2.5 text-sm leading-relaxed text-muted"
                 >
                   <input
                     type="radio"
                     name={question.key}
                     value={option.value}
                     defaultChecked={value === option.value}
-                    className="mt-0.5 h-4 w-4 shrink-0 accent-slate-900"
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-forest"
                   />
                   <span>{option.label}</span>
                 </label>
@@ -69,7 +69,7 @@ export function QuestionField({
             defaultValue={value ?? ''}
             placeholder={question.placeholder}
             aria-describedby={describedBy}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm leading-relaxed text-slate-900 outline-none focus:border-slate-500"
+            className="w-full rounded-md border border-line px-3 py-2 text-sm leading-relaxed text-ink outline-none focus:border-forest"
           />
         ) : (
           <input
@@ -79,7 +79,7 @@ export function QuestionField({
             defaultValue={value ?? ''}
             placeholder={question.placeholder}
             aria-describedby={describedBy}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-500"
+            className="w-full rounded-md border border-line px-3 py-2 text-sm text-ink outline-none focus:border-forest"
           />
         )}
       </div>

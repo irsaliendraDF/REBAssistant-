@@ -1,6 +1,29 @@
 @import "tailwindcss";
 
-@theme inline {
+/*
+ * Brand tokens. Mirrors lib/brand/palette.ts, which is the source of truth and
+ * carries the contrast test. Change both together.
+ *
+ * Named by role rather than by colour, so a later palette change is a value
+ * change here rather than a rename across every component.
+ */
+@theme {
+  --color-ink: #142314;
+  --color-forest: #19552d;
+  --color-forest-dark: #102e1a;
+  --color-olive: #96a537;
+  --color-lime-soft: #dce182;
+  --color-sky-soft: #b4d7f0;
+
+  --color-surface: #f6f8f2;
+  --color-surface-2: #e9eee0;
+  --color-line: #d5dcc9;
+  --color-muted: #55604f;
+  --color-faint: #6e7668;
+
+  --color-alert: #8a2b1c;
+  --color-alert-soft: #f6e7e3;
+
   --font-sans:
     ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica,
     Arial, sans-serif;
@@ -13,4 +36,15 @@
 
 body {
   font-family: var(--font-sans);
+}
+
+/*
+ * A visible focus ring everywhere, in the brand's own green. The browser default
+ * disappears against a dark background, and this is a form-heavy tool that some
+ * researchers will work through entirely by keyboard.
+ */
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-forest);
+  outline-offset: 2px;
+  border-radius: 2px;
 }

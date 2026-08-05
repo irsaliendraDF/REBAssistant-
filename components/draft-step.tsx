@@ -21,7 +21,7 @@ export function DraftStep({
   return (
     <div className="space-y-6">
       {!modelConnected ? (
-        <p className="rounded-md border border-slate-300 bg-slate-50 px-4 py-3 text-xs leading-relaxed text-slate-700">
+        <p className="rounded-md border border-line bg-surface px-4 py-3 text-xs leading-relaxed text-muted">
           <span className="font-medium">No section has been written by the tool yet.</span> The AI
           model is not connected, so the document below carries your own answers under each section
           rather than drafted prose. The structure, the numbering and the disclosure are real. The
@@ -29,17 +29,17 @@ export function DraftStep({
         </p>
       ) : null}
 
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-        <ul className="divide-y divide-slate-200">
+      <div className="overflow-hidden rounded-lg border border-line bg-white">
+        <ul className="divide-y divide-line">
           {draft.sections.map((section) => (
             <li key={section.number} className="flex items-start gap-4 px-5 py-3">
-              <span className="w-10 shrink-0 font-mono text-xs text-slate-400">
+              <span className="w-10 shrink-0 font-mono text-xs text-faint">
                 {section.number}
               </span>
-              <span className="flex-1 text-sm text-slate-800">
+              <span className="flex-1 text-sm text-ink">
                 {section.title}
                 {section.note ? (
-                  <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">
+                  <span className="mt-0.5 block text-xs leading-relaxed text-muted">
                     {section.note}
                   </span>
                 ) : null}
@@ -53,7 +53,7 @@ export function DraftStep({
       <div className="flex flex-wrap items-center gap-3">
         <a
           href={`/project/${projectId}/export`}
-          className="rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+          className="rounded-md border border-line bg-white px-4 py-2.5 text-sm font-medium text-muted transition hover:bg-surface-2"
         >
           Download draft (.docx)
         </a>
@@ -63,7 +63,7 @@ export function DraftStep({
           <input type="hidden" name="to" value="gap_analysis" />
           <button
             type="submit"
-            className="rounded-md bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
+            className="rounded-md bg-forest px-4 py-2.5 text-sm font-medium text-white transition hover:bg-forest-dark"
           >
             Continue to gap analysis
           </button>
@@ -75,11 +75,11 @@ export function DraftStep({
 
 function StatusBadge({ status }: { status: DraftSection['status'] }) {
   const styles: Record<DraftSection['status'], string> = {
-    from_record: 'bg-slate-100 text-slate-700',
-    ai_drafted: 'bg-slate-900 text-white',
-    awaiting_drafting: 'bg-amber-100 text-amber-900',
-    routed: 'bg-slate-200 text-slate-800',
-    no_answers_yet: 'bg-red-100 text-red-800',
+    from_record: 'bg-surface-2 text-muted',
+    ai_drafted: 'bg-forest text-white',
+    awaiting_drafting: 'bg-lime-soft text-ink',
+    routed: 'bg-surface-2 text-ink',
+    no_answers_yet: 'bg-alert-soft text-alert',
   }
 
   const labels: Record<DraftSection['status'], string> = {

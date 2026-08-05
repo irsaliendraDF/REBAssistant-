@@ -32,7 +32,7 @@ export function IntakeStep({
   return (
     <div className="grid gap-8 lg:grid-cols-[220px_1fr]">
       <nav aria-label="Application sections" className="lg:pt-1">
-        <p className="mb-3 text-xs font-medium uppercase tracking-wide text-slate-500">
+        <p className="mb-3 text-xs font-medium uppercase tracking-wide text-muted">
           Sections
         </p>
         <ol className="space-y-1">
@@ -55,21 +55,21 @@ export function IntakeStep({
                   className={[
                     'flex items-start gap-2 rounded-md px-2 py-1.5 text-xs leading-snug transition',
                     isCurrent
-                      ? 'bg-slate-900 text-white'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+                      ? 'bg-forest text-white'
+                      : 'text-muted hover:bg-surface-2 hover:text-ink',
                   ].join(' ')}
                 >
                   <span
                     className={[
                       'font-mono text-[10px]',
-                      isCurrent ? 'text-slate-300' : 'text-slate-400',
+                      isCurrent ? 'text-lime-soft' : 'text-faint',
                     ].join(' ')}
                   >
                     {section.formSection}
                   </span>
                   <span className="flex-1">{section.title}</span>
                   {done && !isCurrent ? (
-                    <span className="text-slate-400" aria-label="complete">
+                    <span className="text-faint" aria-label="complete">
                       ✓
                     </span>
                   ) : null}
@@ -84,12 +84,12 @@ export function IntakeStep({
         <input type="hidden" name="projectId" value={projectId} />
         <input type="hidden" name="formSection" value={current.formSection} />
 
-        <div className="space-y-8 rounded-lg border border-slate-200 bg-white p-6">
+        <div className="space-y-8 rounded-lg border border-line bg-white p-6">
           <div>
-            <p className="font-mono text-xs text-slate-400">Section {current.formSection}</p>
-            <h2 className="mt-1 text-lg font-semibold text-slate-900">{current.title}</h2>
+            <p className="font-mono text-xs text-faint">Section {current.formSection}</p>
+            <h2 className="mt-1 text-lg font-semibold text-ink">{current.title}</h2>
             {current.intro ? (
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">{current.intro}</p>
+              <p className="mt-2 text-sm leading-relaxed text-muted">{current.intro}</p>
             ) : null}
           </div>
 
@@ -108,7 +108,7 @@ export function IntakeStep({
             type="submit"
             name="intent"
             value="advance"
-            className="rounded-md bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
+            className="rounded-md bg-forest px-4 py-2.5 text-sm font-medium text-white transition hover:bg-forest-dark"
           >
             {isLast ? 'Save and continue to method check' : 'Save and next section'}
           </button>
@@ -116,14 +116,14 @@ export function IntakeStep({
             type="submit"
             name="intent"
             value="save"
-            className="rounded-md border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+            className="rounded-md border border-line px-4 py-2.5 text-sm font-medium text-muted transition hover:bg-surface-2"
           >
             Save
           </button>
           {previous ? (
             <Link
               href={`/project/${projectId}?section=${encodeURIComponent(previous.formSection)}`}
-              className="text-sm text-slate-500 underline-offset-4 hover:underline"
+              className="text-sm text-muted underline-offset-4 hover:underline"
             >
               Back to {previous.title.toLowerCase()}
             </Link>

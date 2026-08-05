@@ -32,9 +32,9 @@ export function MethodCheckStep({
 
   if (interpretations.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-slate-300 bg-white p-10 text-center">
-        <p className="text-sm font-medium text-slate-900">Nothing to check yet</p>
-        <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-600">
+      <div className="rounded-lg border border-dashed border-line bg-white p-10 text-center">
+        <p className="text-sm font-medium text-ink">Nothing to check yet</p>
+        <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">
           There are no methodology answers to read back to you. Go back to intake and complete the
           study population, recruitment, consent and methods sections.
         </p>
@@ -45,7 +45,7 @@ export function MethodCheckStep({
   return (
     <div className="space-y-6">
       {ruleDerived ? (
-        <p className="rounded-md border border-slate-300 bg-slate-50 px-4 py-3 text-xs leading-relaxed text-slate-700">
+        <p className="rounded-md border border-line bg-surface px-4 py-3 text-xs leading-relaxed text-muted">
           <span className="font-medium">These readings are summaries, not interpretations.</span>{' '}
           The AI model is not connected yet, so what follows restates your answers under each
           section rather than reasoning about them. Check that everything is filed where you meant
@@ -55,7 +55,7 @@ export function MethodCheckStep({
       ) : null}
 
       {unresolved ? (
-        <p className="rounded-md border border-red-300 bg-red-50 px-4 py-3 text-xs text-red-800">
+        <p className="rounded-md border border-alert/40 bg-alert-soft px-4 py-3 text-xs text-alert">
           Every reading below needs a response before drafting can start.
         </p>
       ) : null}
@@ -70,20 +70,22 @@ export function MethodCheckStep({
             action={respondToInterpretation}
             className={[
               'space-y-4 rounded-lg border bg-white p-6',
-              answered ? 'border-slate-200' : 'border-slate-300',
+              // An unreviewed reading carries the accent edge, so what still
+              // needs attention is visible while scrolling a long list.
+              answered ? 'border-line' : 'border-olive',
             ].join(' ')}
           >
             <input type="hidden" name="projectId" value={projectId} />
             <input type="hidden" name="interpretationId" value={item.id} />
 
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <p className="font-mono text-xs text-slate-400">
+              <p className="font-mono text-xs text-faint">
                 Section {item.formSection ?? '—'}
               </p>
               <ResponseBadge response={item.response} />
             </div>
 
-            <div className="space-y-1 text-sm leading-relaxed text-slate-800">
+            <div className="space-y-1 text-sm leading-relaxed text-ink">
               {item.interpretation.split('\n').map((line, index) =>
                 line.trim().length === 0 ? (
                   <div key={index} className="h-2" />
@@ -94,9 +96,9 @@ export function MethodCheckStep({
             </div>
 
             {item.researcherCorrection ? (
-              <div className="rounded-md border-l-2 border-slate-400 bg-slate-50 px-4 py-3">
-                <p className="text-xs font-medium text-slate-700">Your correction</p>
-                <p className="mt-1 text-sm leading-relaxed text-slate-800">
+              <div className="rounded-md border-l-2 border-faint bg-surface px-4 py-3">
+                <p className="text-xs font-medium text-muted">Your correction</p>
+                <p className="mt-1 text-sm leading-relaxed text-ink">
                   {item.researcherCorrection}
                 </p>
               </div>
@@ -105,15 +107,15 @@ export function MethodCheckStep({
             <div>
               <label
                 htmlFor={`correction-${item.id}`}
-                className="block text-sm font-medium text-slate-900"
+                className="block text-sm font-medium text-ink"
               >
                 What have we got wrong?
               </label>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-muted">
                 Needed if you are correcting or rejecting this reading. Leave blank to confirm it.
               </p>
               {needsCorrection ? (
-                <p className="mt-1 text-xs font-medium text-red-600">
+                <p className="mt-1 text-xs font-medium text-alert">
                   Say what is wrong before correcting or rejecting.
                 </p>
               ) : null}
@@ -123,8 +125,8 @@ export function MethodCheckStep({
                 rows={3}
                 defaultValue={item.researcherCorrection ?? ''}
                 className={[
-                  'mt-2 w-full rounded-md border px-3 py-2 text-sm leading-relaxed text-slate-900 outline-none focus:border-slate-500',
-                  needsCorrection ? 'border-red-400' : 'border-slate-300',
+                  'mt-2 w-full rounded-md border px-3 py-2 text-sm leading-relaxed text-ink outline-none focus:border-forest',
+                  needsCorrection ? 'border-alert' : 'border-line',
                 ].join(' ')}
               />
             </div>
@@ -134,7 +136,7 @@ export function MethodCheckStep({
                 type="submit"
                 name="intent"
                 value="confirm"
-                className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+                className="rounded-md bg-forest px-4 py-2 text-sm font-medium text-white transition hover:bg-forest-dark"
               >
                 This is right
               </button>
@@ -142,7 +144,7 @@ export function MethodCheckStep({
                 type="submit"
                 name="intent"
                 value="alter"
-                className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+                className="rounded-md border border-line px-4 py-2 text-sm font-medium text-muted transition hover:bg-surface-2"
               >
                 Mostly right, with a correction
               </button>
@@ -150,7 +152,7 @@ export function MethodCheckStep({
                 type="submit"
                 name="intent"
                 value="reject"
-                className="rounded-md border border-red-300 px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-50"
+                className="rounded-md border border-alert/40 px-4 py-2 text-sm font-medium text-alert transition hover:bg-alert-soft"
               >
                 This is wrong, take me back
               </button>
@@ -159,16 +161,16 @@ export function MethodCheckStep({
         )
       })}
 
-      <form action={advanceToDraft} className="border-t border-slate-200 pt-6">
+      <form action={advanceToDraft} className="border-t border-line pt-6">
         <input type="hidden" name="projectId" value={projectId} />
         <button
           type="submit"
           disabled={!resolved || rejected}
-          className="rounded-md bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+          className="rounded-md bg-forest px-4 py-2.5 text-sm font-medium text-white transition hover:bg-forest-dark disabled:cursor-not-allowed disabled:bg-line"
         >
           Continue to drafting
         </button>
-        <p className="mt-2 text-xs text-slate-500">
+        <p className="mt-2 text-xs text-muted">
           {resolved && !rejected
             ? 'Every reading has been reviewed.'
             : `${interpretations.filter((item) => item.response === 'pending').length} of ${interpretations.length} still to review.`}
@@ -180,10 +182,10 @@ export function MethodCheckStep({
 
 function ResponseBadge({ response }: { response: MethodInterpretation['response'] }) {
   const styles: Record<MethodInterpretation['response'], string> = {
-    pending: 'bg-slate-100 text-slate-600',
-    confirmed: 'bg-slate-900 text-white',
-    altered: 'bg-amber-100 text-amber-900',
-    rejected: 'bg-red-100 text-red-800',
+    pending: 'bg-surface-2 text-muted',
+    confirmed: 'bg-forest text-white',
+    altered: 'bg-lime-soft text-ink',
+    rejected: 'bg-alert-soft text-alert',
   }
 
   const labels: Record<MethodInterpretation['response'], string> = {

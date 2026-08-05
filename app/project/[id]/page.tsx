@@ -49,14 +49,14 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
       <div>
         <Link
           href="/dashboard"
-          className="text-xs text-slate-500 underline-offset-4 hover:underline"
+          className="text-xs text-muted underline-offset-4 hover:underline"
         >
           ← All applications
         </Link>
         <div className="mt-2 flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-900">{project.title}</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
+            <h1 className="text-2xl font-semibold text-ink">{project.title}</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
               {definition.description}
             </p>
           </div>
@@ -67,7 +67,7 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
           {project.state !== 'triage' ? (
             <a
               href={`/project/${project.id}/export`}
-              className="shrink-0 rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+              className="shrink-0 rounded-md border border-line bg-white px-4 py-2.5 text-sm font-medium text-muted transition hover:bg-surface-2"
             >
               Download draft (.docx)
             </a>
@@ -78,7 +78,7 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
       <WorkflowProgress current={project.state} />
 
       {store.isEphemeral ? (
-        <p className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-900">
+        <p className="rounded-md border border-olive/60 bg-lime-soft/40 px-4 py-3 text-xs leading-relaxed text-ink">
           <span className="font-medium">Answers are not being saved permanently.</span> The database
           is not connected yet, so what you enter here lives in the server's memory and will be lost
           when it restarts. Fine for walking through the flow, not for real work.
@@ -86,7 +86,7 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
       ) : null}
 
       {rejected ? (
-        <p className="rounded-md border border-slate-300 bg-slate-50 px-4 py-3 text-xs leading-relaxed text-slate-700">
+        <p className="rounded-md border border-line bg-surface px-4 py-3 text-xs leading-relaxed text-muted">
           You have been brought back to intake, because the reading of your methodology was wrong.
           Correct the answers behind it and continue again when you are ready. Your correction has
           been recorded.
@@ -94,13 +94,13 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
       ) : null}
 
       {saved ? (
-        <p className="rounded-md border border-slate-200 bg-white px-4 py-3 text-xs text-slate-600">
+        <p className="rounded-md border border-line bg-white px-4 py-3 text-xs text-muted">
           Saved. You can close this and come back to it.
         </p>
       ) : null}
 
       {missing.length > 0 ? (
-        <p className="rounded-md border border-red-300 bg-red-50 px-4 py-3 text-xs leading-relaxed text-red-800">
+        <p className="rounded-md border border-alert/40 bg-alert-soft px-4 py-3 text-xs leading-relaxed text-alert">
           {missing.length === 1
             ? 'One question still needs an answer before you can move on. It is marked below.'
             : `${missing.length} questions still need answers before you can move on. They are marked below.`}
@@ -108,9 +108,9 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
       ) : null}
 
       {project.routingNote ? (
-        <div className="rounded-lg border border-slate-300 bg-slate-50 p-4">
-          <p className="text-sm font-medium text-slate-900">Some sections go to a person, not the tool</p>
-          <p className="mt-1 text-sm leading-relaxed text-slate-700">{project.routingNote}</p>
+        <div className="rounded-lg border border-line bg-surface p-4">
+          <p className="text-sm font-medium text-ink">Some sections go to a person, not the tool</p>
+          <p className="mt-1 text-sm leading-relaxed text-muted">{project.routingNote}</p>
         </div>
       ) : null}
 
@@ -144,23 +144,23 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
           modelConnected={isAnthropicConfigured}
         />
       ) : (
-        <div className="rounded-lg border border-slate-200 bg-white p-10 text-center">
-          <p className="text-sm font-medium text-slate-900">Ready for you to review</p>
-          <p className="mx-auto mt-2 max-w-lg text-sm leading-relaxed text-slate-600">
+        <div className="rounded-lg border border-line bg-white p-10 text-center">
+          <p className="text-sm font-medium text-ink">Ready for you to review</p>
+          <p className="mx-auto mt-2 max-w-lg text-sm leading-relaxed text-muted">
             Download the document, check it, complete anything the tool left to you, and submit it
             yourself. Research Ethics Board Assistant does not submit applications and does not
             decide whether research is approved.
           </p>
           <a
             href={`/project/${project.id}/export`}
-            className="mt-6 inline-block rounded-md bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
+            className="mt-6 inline-block rounded-md bg-forest px-4 py-2.5 text-sm font-medium text-white transition hover:bg-forest-dark"
           >
             Download draft (.docx)
           </a>
         </div>
       )}
 
-      <p className="border-t border-slate-200 pt-6 text-xs leading-relaxed text-slate-500">
+      <p className="border-t border-line pt-6 text-xs leading-relaxed text-muted">
         Research Ethics Board Assistant helps you prepare an application. It does not review,
         approve or exempt research. Every ethics determination is made by the Research Ethics Board.
       </p>
