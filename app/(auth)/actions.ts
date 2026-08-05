@@ -3,6 +3,7 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
+import { getRequestOrigin } from '@/lib/app-url'
 import { PLACEHOLDER_COOKIE } from '@/lib/auth/session'
 import { env, isSupabaseConfigured } from '@/lib/env'
 import { createClient } from '@/lib/supabase/server'
@@ -29,10 +30,14 @@ export async function signInWithMagicLink(formData: FormData) {
     redirect('/sign-in?error=auth_not_configured')
   }
 
+  // Derived from the request rather than from a variable, so a production email
+  // can never point at localhost. See lib/app-url.ts.
+  const origin = await getRequestOrigin()
+
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: `${env.app.url}/callback`,
+      emailRedirectTo: `${origin}/callback`,
       shouldCreateUser: true,
     },
   })

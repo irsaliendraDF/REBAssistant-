@@ -16,10 +16,39 @@ function optional(name: string): string | undefined {
   return value && value.length > 0 ? value : undefined
 }
 
+/**
+ * Accepts a project reference as well as a full URL.
+ *
+ * The dashboard shows both, one line apart, and pasting the reference is an easy
+ * mistake that produces a confusing failure much later. Normalising here costs
+ * nothing and removes the failure mode.
+ */
+function normaliseSupabaseUrl(value: string | undefined): string | undefined {
+  if (!value) return undefined
+  const trimmed = value.trim().replace(/\/+$/, '')
+  if (/^https?:\/\//.test(trimmed)) return trimmed
+  // A bare project reference: 20 lowercase letters, as Supabase issues them.
+  if (/^[a-z]{16,32}$/.test(trimmed)) return `https://${trimmed}.supabase.co`
+  return trimmed
+}
+
+/** Exported for the test alone. Not part of the module's interface. */
+export const normaliseSupabaseUrlForTest = normaliseSupabaseUrl
+
+const supabaseUrl = normaliseSupabaseUrl(optional('NEXT_PUBLIC_SUPABASE_URL'))
+const supabaseAnonKey = optional('NEXT_PUBLIC_SUPABASE_ANON_KEY')
+
+/**
+ * Whether there is a real database behind the app. Several defaults below key
+ * off this, so that connecting Supabase switches off the stand-ins by itself
+ * rather than depending on someone remembering two more variables.
+ */
+const supabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey)
+
 export const env = {
   supabase: {
-    url: optional('NEXT_PUBLIC_SUPABASE_URL'),
-    anonKey: optional('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
+    url: supabaseUrl,
+    anonKey: supabaseAnonKey,
     /** Server side only. Never import this into a client component. */
     serviceRoleKey: optional('SUPABASE_SERVICE_ROLE_KEY'),
   },
@@ -43,9 +72,13 @@ export const env = {
      * closed in the one environment that is public.
      */
     usePlaceholderAuth:
-      optional('NEXT_PUBLIC_USE_PLACEHOLDER_AUTH') === undefined
+      // A real database ends this, whatever the variable says. The placeholder
+      // user id does not exist in auth.users, so row level security would reject
+      // every write it attempted.
+      !supabaseConfigured &&
+      (optional('NEXT_PUBLIC_USE_PLACEHOLDER_AUTH') === undefined
         ? process.env.NODE_ENV !== 'production'
-        : optional('NEXT_PUBLIC_USE_PLACEHOLDER_AUTH') === 'true',
+        : optional('NEXT_PUBLIC_USE_PLACEHOLDER_AUTH') === 'true'),
 
     /**
      * Review build. Sign-in is skipped entirely so the work in progress can be
@@ -53,15 +86,19 @@ export const env = {
      * this is what is happening.
      *
      * Safe only while there is nothing behind the wall: no database, no stored
-     * answers, no participant data, an empty dashboard. The moment the hosted
-     * project is connected this has to go off, which is one variable:
-     * NEXT_PUBLIC_REVIEW_MODE=false.
+     * answers, no participant data, an empty dashboard.
+     *
+     * Connecting Supabase switches it off by itself. Leaving that to a separate
+     * variable meant an open URL sitting in front of a real database if anyone
+     * forgot to set it, which is too consequential to depend on memory. It also
+     * would not have worked: the reviewer's user id does not exist in
+     * auth.users, so every write would fail row level security anyway.
      */
-    reviewMode: optional('NEXT_PUBLIC_REVIEW_MODE') !== 'false',
+    reviewMode: !supabaseConfigured && optional('NEXT_PUBLIC_REVIEW_MODE') !== 'false',
   },
 } as const
 
-export const isSupabaseConfigured = Boolean(env.supabase.url && env.supabase.anonKey)
+export const isSupabaseConfigured = supabaseConfigured
 export const isSupabaseAdminConfigured = Boolean(env.supabase.url && env.supabase.serviceRoleKey)
 export const isAnthropicConfigured = Boolean(env.anthropic.apiKey)
 export const isEmbeddingsConfigured = Boolean(env.embeddings.apiKey)
