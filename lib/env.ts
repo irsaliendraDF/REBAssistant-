@@ -46,6 +46,18 @@ export const env = {
       optional('NEXT_PUBLIC_USE_PLACEHOLDER_AUTH') === undefined
         ? process.env.NODE_ENV !== 'production'
         : optional('NEXT_PUBLIC_USE_PLACEHOLDER_AUTH') === 'true',
+
+    /**
+     * Review build. Sign-in is skipped entirely so the work in progress can be
+     * looked at without an account, and the interface says on every screen that
+     * this is what is happening.
+     *
+     * Safe only while there is nothing behind the wall: no database, no stored
+     * answers, no participant data, an empty dashboard. The moment the hosted
+     * project is connected this has to go off, which is one variable:
+     * NEXT_PUBLIC_REVIEW_MODE=false.
+     */
+    reviewMode: optional('NEXT_PUBLIC_REVIEW_MODE') !== 'false',
   },
 } as const
 

@@ -42,8 +42,19 @@ docs/                 agreement, build plan, guardrails, handover
 npm run dev
 ```
 
-Then open http://localhost:3000. You will land on a placeholder sign-in, and from
-there an empty dashboard.
+Then open http://localhost:3000. You land straight on the dashboard, because the
+build is currently in review mode.
+
+### Review mode
+
+Sign-in is skipped entirely, so the work in progress can be looked at without an
+account. Every screen says so. This is safe only while there is nothing behind
+the wall: no database, no stored answers, no participant data, an empty
+dashboard.
+
+**Turn it off the same day the hosted Supabase project is connected**, by setting
+`NEXT_PUBLIC_REVIEW_MODE=false`. It is the one thing standing between an open URL
+and real researcher data.
 
 Nothing else is required right now. There is no database connected, no Anthropic
 key and no hosted account, and the app is written to say so plainly rather than

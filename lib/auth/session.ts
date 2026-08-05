@@ -8,32 +8,53 @@ import { createClient } from '@/lib/supabase/server'
 /**
  * The auth boundary.
  *
- * PLACEHOLDER for the local phase. Until the hosted Supabase project exists
- * there is no user store, so a signed cookie stands in for a session. It is
- * deliberately crude: a single local test identity, no password, no persistence
- * beyond the cookie.
+ * Three modes, in priority order.
  *
- * When Supabase arrives, `NEXT_PUBLIC_USE_PLACEHOLDER_AUTH=false` switches this
- * to the real magic link session and nothing above this module changes. That is
- * the whole point of routing every caller through `getSession()` rather than
- * reading cookies or Supabase directly in pages.
+ * **Review mode.** Sign-in is skipped entirely and everyone is the reviewer.
+ * For looking at work in progress before there is anything to protect. Every
+ * screen says so. Off the moment a database is connected.
  *
- * Auth is email magic link, not Dalhousie SSO (build plan Section 9,
- * assumption 1). Institutional SSO needs Dal IT involvement and a formal
- * integration request, which will not happen by September 1.
+ * **Placeholder.** A cookie stands in for a session while there is no user
+ * store. Deliberately crude: one local test identity, no password, no
+ * persistence beyond the cookie.
+ *
+ * **Real.** Supabase magic link, once the hosted project exists.
+ *
+ * Callers never read cookies or Supabase directly. They call `getSession()`,
+ * which is why moving between these three modes changes nothing above this file.
+ *
+ * Auth is email magic link, not institutional single sign-on (build plan
+ * Section 9, assumption 1). Institutional single sign-on needs university IT
+ * involvement and a formal integration request, which will not happen by
+ * September 1.
  */
 
 export const PLACEHOLDER_COOKIE = 'reb_placeholder_session'
+
+/** Stable id so tombstone reuse can be exercised across projects in review builds. */
+const REVIEW_USER_ID = '00000000-0000-4000-8000-000000000002'
 
 export interface Session {
   userId: string
   email: string
   displayName: string
-  /** True while the placeholder stands in for real authentication. */
+  /** True while a stand-in stands in for real authentication. */
   isPlaceholder: boolean
+  /** True when sign-in was skipped entirely, rather than merely faked. */
+  isReview: boolean
 }
 
 export async function getSession(): Promise<Session | null> {
+  if (env.app.reviewMode) {
+    return {
+      userId: REVIEW_USER_ID,
+      email: 'Reviewer',
+      displayName: 'Reviewer',
+      isPlaceholder: true,
+      isReview: true,
+    }
+  }
+
   if (!env.app.usePlaceholderAuth) {
     const supabase = await createClient()
     if (!supabase) return null
@@ -48,6 +69,7 @@ export async function getSession(): Promise<Session | null> {
       email: user.email ?? '',
       displayName: (user.user_metadata?.full_name as string | undefined) ?? user.email ?? 'Researcher',
       isPlaceholder: false,
+      isReview: false,
     }
   }
 
@@ -63,6 +85,7 @@ export async function getSession(): Promise<Session | null> {
       email: parsed.email,
       displayName: parsed.email,
       isPlaceholder: true,
+      isReview: false,
     }
   } catch {
     return null

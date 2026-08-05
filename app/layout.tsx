@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Research Ethics Board Assistant",
   description:
-    "Prepare a Dalhousie Research Ethics Board application. Drafting and gap analysis support. The Board makes every ethics determination.",
+    "Prepare a Research Ethics Board application. Drafting and gap analysis support. The Board makes every ethics determination.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

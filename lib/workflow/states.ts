@@ -59,7 +59,7 @@ export const STATE_DEFINITIONS: Record<ProjectState, StateDefinition> = {
     state: 'draft',
     label: 'Draft',
     description:
-      'A first draft of the application, assembled against the Dalhousie form structure for you to review and edit.',
+      'A first draft of the application, assembled against the form structure for you to review and edit.',
     allowedNext: ['gap_analysis'],
   },
   gap_analysis: {
