@@ -59,6 +59,42 @@ export interface SaveAnswersInput {
   sections: Record<string, string | undefined>
 }
 
+/**
+ * The verification loop, and the proof that a human reviewed every reasoning
+ * step. Mirrors `method_interpretations`, including its constraints: a
+ * correction is required when altering or rejecting, and a resolved response
+ * must record who resolved it and when.
+ */
+export type InterpretationResponse = 'pending' | 'confirmed' | 'altered' | 'rejected'
+
+export interface MethodInterpretation {
+  id: string
+  projectId: string
+  formSection: string | null
+  interpretation: string
+  response: InterpretationResponse
+  researcherCorrection: string | null
+  respondedBy: string | null
+  respondedAt: string | null
+  /** Null when the interpretation was derived by rule rather than by a model. */
+  modelVersion: string | null
+  createdAt: string
+}
+
+export interface NewInterpretation {
+  formSection: string | null
+  interpretation: string
+  modelVersion: string | null
+}
+
+export interface RespondInput {
+  id: string
+  projectId: string
+  response: Exclude<InterpretationResponse, 'pending'>
+  correction: string | null
+  respondedBy: string
+}
+
 export interface TransitionInput {
   projectId: string
   from: ProjectState
@@ -83,6 +119,16 @@ export interface DataStore {
 
   getAnswers(projectId: string): Promise<AnswerMap>
   saveAnswers(input: SaveAnswersInput): Promise<void>
+
+  listInterpretations(projectId: string): Promise<MethodInterpretation[]>
+  /**
+   * Replaces the set for a project. Used when it enters method check, so a
+   * project sent back to intake and returned gets interpretations built from the
+   * answers as they now stand, rather than stale ones the researcher already
+   * rejected.
+   */
+  replaceInterpretations(projectId: string, items: NewInterpretation[]): Promise<void>
+  respondToInterpretation(input: RespondInput): Promise<void>
 
   recordTransition(input: TransitionInput): Promise<void>
 }

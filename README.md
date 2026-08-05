@@ -92,9 +92,12 @@ Built:
 - Draft assembly and `.docx` export in the form structure, with AI-use
   disclosure generated from what was actually drafted
 
+- The method check loop: confirm, correct or reject, with rejection sending the
+  project back to intake and a correction required before either
+
 Not built yet, in build-sequence order:
 
-- The remaining workflow screens: method check, draft, gap analysis
+- Gap analysis
 - Model-drafted prose for the `awaiting_drafting` sections, which needs the
   Anthropic key
 - Text extraction for PDF and DOCX, and embedding generation

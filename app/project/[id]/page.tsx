@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 import { IntakeStep } from '@/components/intake-step'
+import { MethodCheckStep } from '@/components/method-check-step'
 import { TriageStep } from '@/components/triage-step'
 import { WorkflowProgress } from '@/components/workflow-progress'
 import { getSession } from '@/lib/auth/session'
@@ -25,8 +26,11 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
   if (!project) notFound()
 
   const answers = await store.getAnswers(id)
+  const interpretations =
+    project.state === 'method_check' ? await store.listInterpretations(id) : []
   const missing = readList(search.missing)
   const saved = search.saved === '1'
+  const rejected = search.rejected === '1'
 
   const sections = visibleSections(answers)
   const requested = readOne(search.section)
@@ -76,6 +80,14 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
         </p>
       ) : null}
 
+      {rejected ? (
+        <p className="rounded-md border border-slate-300 bg-slate-50 px-4 py-3 text-xs leading-relaxed text-slate-700">
+          You have been brought back to intake, because the reading of your methodology was wrong.
+          Correct the answers behind it and continue again when you are ready. Your correction has
+          been recorded.
+        </p>
+      ) : null}
+
       {saved ? (
         <p className="rounded-md border border-slate-200 bg-white px-4 py-3 text-xs text-slate-600">
           Saved. You can close this and come back to it.
@@ -99,6 +111,13 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
 
       {project.state === 'triage' ? (
         <TriageStep projectId={project.id} answers={answers} missing={missing} />
+      ) : project.state === 'method_check' ? (
+        <MethodCheckStep
+          projectId={project.id}
+          interpretations={interpretations}
+          correctionNeededFor={readOne(search.correctionNeeded)}
+          unresolved={search.unresolved === '1'}
+        />
       ) : project.state === 'intake' && current ? (
         <IntakeStep
           projectId={project.id}

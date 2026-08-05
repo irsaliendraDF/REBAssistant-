@@ -6,8 +6,12 @@ import type {
   AnswerMap,
   CreateProjectInput,
   DataStore,
+  InterpretationResponse,
+  MethodInterpretation,
+  NewInterpretation,
   Project,
   ProjectPatch,
+  RespondInput,
   SaveAnswersInput,
   TransitionInput,
 } from './types'
@@ -38,6 +42,19 @@ interface ProjectRow {
   routing_note: string | null
   created_at: string
   updated_at: string
+}
+
+interface InterpretationRow {
+  id: string
+  project_id: string
+  form_section: string | null
+  interpretation: string
+  response: InterpretationResponse
+  researcher_correction: string | null
+  responded_by: string | null
+  responded_at: string | null
+  model_version: string | null
+  created_at: string
 }
 
 function toProject(row: ProjectRow): Project {
@@ -161,6 +178,79 @@ export const supabaseStore: DataStore = {
       .upsert(rows, { onConflict: 'project_id,question_key' })
 
     if (error) throw new Error(`Could not save your answers: ${error.message}`)
+  },
+
+  async listInterpretations(projectId) {
+    const supabase = await requireClient()
+    const { data, error } = await supabase
+      .from('method_interpretations')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: true })
+
+    if (error) throw new Error(`Could not load the method check: ${error.message}`)
+
+    return (data ?? []).map(
+      (row: InterpretationRow): MethodInterpretation => ({
+        id: row.id,
+        projectId: row.project_id,
+        formSection: row.form_section,
+        interpretation: row.interpretation,
+        response: row.response,
+        researcherCorrection: row.researcher_correction,
+        respondedBy: row.responded_by,
+        respondedAt: row.responded_at,
+        modelVersion: row.model_version,
+        createdAt: row.created_at,
+      }),
+    )
+  },
+
+  async replaceInterpretations(projectId, items: NewInterpretation[]) {
+    const supabase = await requireClient()
+
+    // Deleting the old set loses the previous round's responses. That is the
+    // intent: a project sent back to intake and returned must be reviewed
+    // against the answers as they now stand, and the transition log already
+    // records that the round happened.
+    const { error: deleteError } = await supabase
+      .from('method_interpretations')
+      .delete()
+      .eq('project_id', projectId)
+
+    if (deleteError) throw new Error(`Could not reset the method check: ${deleteError.message}`)
+    if (items.length === 0) return
+
+    const { error } = await supabase.from('method_interpretations').insert(
+      items.map((item) => ({
+        project_id: projectId,
+        form_section: item.formSection,
+        interpretation: item.interpretation,
+        model_version: item.modelVersion,
+        response: 'pending',
+      })),
+    )
+
+    if (error) throw new Error(`Could not prepare the method check: ${error.message}`)
+  },
+
+  async respondToInterpretation({ id, projectId, response, correction, respondedBy }: RespondInput) {
+    const supabase = await requireClient()
+    const { error } = await supabase
+      .from('method_interpretations')
+      .update({
+        response,
+        researcher_correction: correction?.trim() || null,
+        responded_by: respondedBy,
+        responded_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .eq('project_id', projectId)
+
+    // The table's check constraints reject an altered or rejected response with
+    // no correction, so a bug in the caller surfaces here rather than writing a
+    // review that never happened.
+    if (error) throw new Error(`Could not record your response: ${error.message}`)
   },
 
   async recordTransition({ projectId, from, to, actorId, reason }: TransitionInput) {

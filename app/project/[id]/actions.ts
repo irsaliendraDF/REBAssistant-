@@ -13,6 +13,7 @@ import {
   triageFlags,
   visibleSections,
 } from '@/lib/intake/questions'
+import { allResolved, deriveInterpretations, hasRejection } from '@/lib/method/interpret'
 import { assertValidTransition } from '@/lib/workflow/states'
 import type { AnswerMap } from '@/lib/data/types'
 
@@ -158,6 +159,13 @@ export async function saveIntakeSection(formData: FormData) {
     reason: 'Intake completed by researcher',
   })
 
+  // Built from the answers as they now stand, replacing any set from a previous
+  // round that the researcher sent back.
+  await store.replaceInterpretations(
+    projectId,
+    deriveInterpretations({ ...existing, ...answers }),
+  )
+
   await store.recordTransition({
     projectId,
     from: project.state,
@@ -166,6 +174,106 @@ export async function saveIntakeSection(formData: FormData) {
     reason: 'Intake completed by researcher',
   })
   await store.updateProject(projectId, session.userId, { state: 'method_check' })
+
+  redirect(`/project/${projectId}`)
+}
+
+/**
+ * One response to one reading. Guardrail 3 in its most literal form: the app
+ * states its understanding, and cannot move until a person answers.
+ *
+ * A rejection acts immediately and sends the project back to intake, rather than
+ * being collected up with the others. Rejecting means the tool has the research
+ * wrong, and there is nothing useful to do with the remaining readings until
+ * that is fixed.
+ */
+export async function respondToInterpretation(formData: FormData) {
+  const session = await getSession()
+  if (!session) redirect('/sign-in')
+
+  const projectId = String(formData.get('projectId') ?? '')
+  const interpretationId = String(formData.get('interpretationId') ?? '')
+  const intent = String(formData.get('intent') ?? '')
+  const correction = String(formData.get('correction') ?? '').trim()
+
+  const store = getStore()
+  const project = await store.getProject(projectId, session.userId)
+  if (!project) redirect('/dashboard')
+
+  const response =
+    intent === 'confirm' ? 'confirmed' : intent === 'alter' ? 'altered' : 'rejected'
+
+  if (response !== 'confirmed' && correction.length === 0) {
+    redirect(
+      `/project/${projectId}?correctionNeeded=${encodeURIComponent(interpretationId)}`,
+    )
+  }
+
+  await store.respondToInterpretation({
+    id: interpretationId,
+    projectId,
+    response,
+    correction: response === 'confirmed' ? null : correction,
+    respondedBy: session.userId,
+  })
+
+  if (response !== 'rejected') {
+    redirect(`/project/${projectId}`)
+  }
+
+  assertValidTransition({
+    projectId,
+    from: project.state,
+    to: 'intake',
+    actorId: session.userId,
+    reason: 'Researcher rejected the tool’s reading of the methodology',
+  })
+
+  await store.recordTransition({
+    projectId,
+    from: project.state,
+    to: 'intake',
+    actorId: session.userId,
+    reason: 'Researcher rejected the tool’s reading of the methodology',
+  })
+  await store.updateProject(projectId, session.userId, { state: 'intake' })
+
+  redirect(`/project/${projectId}?rejected=1`)
+}
+
+/** Leaves the method check for drafting. Only once every reading is resolved. */
+export async function advanceToDraft(formData: FormData) {
+  const session = await getSession()
+  if (!session) redirect('/sign-in')
+
+  const projectId = String(formData.get('projectId') ?? '')
+
+  const store = getStore()
+  const project = await store.getProject(projectId, session.userId)
+  if (!project) redirect('/dashboard')
+
+  const interpretations = await store.listInterpretations(projectId)
+
+  if (hasRejection(interpretations) || !allResolved(interpretations)) {
+    redirect(`/project/${projectId}?unresolved=1`)
+  }
+
+  assertValidTransition({
+    projectId,
+    from: project.state,
+    to: 'draft',
+    actorId: session.userId,
+    reason: 'Researcher confirmed the reading of the methodology',
+  })
+
+  await store.recordTransition({
+    projectId,
+    from: project.state,
+    to: 'draft',
+    actorId: session.userId,
+    reason: 'Researcher confirmed the reading of the methodology',
+  })
+  await store.updateProject(projectId, session.userId, { state: 'draft' })
 
   redirect(`/project/${projectId}`)
 }

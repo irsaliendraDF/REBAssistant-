@@ -6,12 +6,9 @@ import { connection } from 'next/server'
 
 import type {
   AnswerMap,
-  CreateProjectInput,
   DataStore,
+  MethodInterpretation,
   Project,
-  ProjectPatch,
-  SaveAnswersInput,
-  TransitionInput,
 } from './types'
 
 /**
@@ -40,15 +37,22 @@ import type {
 interface MemoryDatabase {
   projects: Map<string, Project>
   answers: Map<string, AnswerMap>
+  interpretations: Map<string, MethodInterpretation[]>
 }
 
 const globalForStore = globalThis as unknown as { __rebMemoryDatabase?: MemoryDatabase }
 
 function db(): MemoryDatabase {
-  if (!globalForStore.__rebMemoryDatabase) {
-    globalForStore.__rebMemoryDatabase = { projects: new Map(), answers: new Map() }
-  }
-  return globalForStore.__rebMemoryDatabase
+  // Each collection is checked individually rather than the object as a whole.
+  // An all-or-nothing initialiser only runs when the global is absent, so a
+  // process that survived a hot reload from before a collection existed keeps
+  // the old shape, and the new field reads as undefined. That is not only a
+  // development annoyance: any long-lived process across a deploy would hit it.
+  const database = (globalForStore.__rebMemoryDatabase ??= {} as MemoryDatabase)
+  database.projects ??= new Map()
+  database.answers ??= new Map()
+  database.interpretations ??= new Map()
+  return database
 }
 
 function assertOwned(project: Project | undefined, ownerId: string): Project | null {
@@ -115,6 +119,52 @@ export const memoryStore: DataStore = {
   async saveAnswers({ projectId, answers }) {
     const existing = db().answers.get(projectId) ?? {}
     db().answers.set(projectId, { ...existing, ...answers })
+  },
+
+  async listInterpretations(projectId) {
+    await connection()
+    return [...(db().interpretations.get(projectId) ?? [])]
+  },
+
+  async replaceInterpretations(projectId, items) {
+    const now = new Date().toISOString()
+    db().interpretations.set(
+      projectId,
+      items.map((item, index) => ({
+        id: `${projectId}:${index}`,
+        projectId,
+        formSection: item.formSection,
+        interpretation: item.interpretation,
+        response: 'pending',
+        researcherCorrection: null,
+        respondedBy: null,
+        respondedAt: null,
+        modelVersion: item.modelVersion,
+        createdAt: now,
+      })),
+    )
+  },
+
+  async respondToInterpretation({ id, projectId, response, correction, respondedBy }) {
+    const list = db().interpretations.get(projectId) ?? []
+    const existing = list.find((item) => item.id === id)
+    if (!existing) {
+      throw new Error('Interpretation not found')
+    }
+
+    // The same constraints Postgres enforces, applied here so behaviour does not
+    // change when the store swaps. An altered or rejected reading without a
+    // correction is not a review, it is a shrug.
+    if ((response === 'altered' || response === 'rejected') && !correction?.trim()) {
+      throw new Error('A correction is required when altering or rejecting an interpretation')
+    }
+
+    Object.assign(existing, {
+      response,
+      researcherCorrection: correction?.trim() || null,
+      respondedBy,
+      respondedAt: new Date().toISOString(),
+    })
   },
 
   async recordTransition({ projectId, from, to, actorId }) {
