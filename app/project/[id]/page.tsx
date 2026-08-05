@@ -44,10 +44,26 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
         >
           ← All applications
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold text-slate-900">{project.title}</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
-          {definition.description}
-        </p>
+        <div className="mt-2 flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold text-slate-900">{project.title}</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
+              {definition.description}
+            </p>
+          </div>
+
+          {/* Available from intake onwards. A partial document that shows the
+              real structure is the fastest way to find out whether the structure
+              is right. */}
+          {project.state !== 'triage' ? (
+            <a
+              href={`/project/${project.id}/export`}
+              className="shrink-0 rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+            >
+              Download draft (.docx)
+            </a>
+          ) : null}
+        </div>
       </div>
 
       <WorkflowProgress current={project.state} />

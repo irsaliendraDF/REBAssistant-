@@ -70,6 +70,9 @@ export const TRIAGE_QUESTIONS: Question[] = [
     type: 'text',
     required: true,
     placeholder: 'Community Retrofit Readiness',
+    // Every question declares where its answer lands, including the triage ones,
+    // so draft assembly needs no special cases.
+    formSection: '1',
   },
   {
     key: TRIAGE_SUMMARY_KEY,
@@ -77,6 +80,7 @@ export const TRIAGE_QUESTIONS: Question[] = [
     help: 'Write it the way you would say it out loud. This becomes the raw material for the lay summary later, so plain language now saves work then.',
     type: 'textarea',
     required: true,
+    formSection: '2.1',
   },
   {
     key: 'triage.data_source',

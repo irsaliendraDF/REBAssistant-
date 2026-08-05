@@ -89,9 +89,14 @@ Built:
   Indigenous and community-engaged flags routing the affected sections to a
   person
 
+- Draft assembly and `.docx` export in the form structure, with AI-use
+  disclosure generated from what was actually drafted
+
 Not built yet, in build-sequence order:
 
 - The remaining workflow screens: method check, draft, gap analysis
+- Model-drafted prose for the `awaiting_drafting` sections, which needs the
+  Anthropic key
 - Text extraction for PDF and DOCX, and embedding generation
 - Draft assembly and .docx export in the Dalhousie form layout
 - The three AI-disclosure surfaces
