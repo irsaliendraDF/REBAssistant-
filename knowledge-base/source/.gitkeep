@@ -1,0 +1,13 @@
+# Source documents go in this folder. The folder is tracked; its contents are not.
+#
+# Expected here:
+#   application-human-ethics-prospective-research.docx   the form, and the spine of the build
+#   reb-application-guidelines-for-prospective-research.pdf
+#   consent-form-*.pdf                                   generation templates
+#   confidentiality-agreement-template.pdf
+#   hints-for-research-recruitment-messages.pdf
+#   TCPS2 material
+#   Test material (the Community Retrofit Readiness proposal, the Future Civics braindump)
+#
+# Several files arrive as -2 duplicates. Drop them in as they are; ingestion
+# de-duplicates on content hash, not filename.

@@ -1,36 +1,87 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# REB Assistant
 
-## Getting Started
+A web application that helps researchers at Dalhousie University prepare Research
+Ethics Board applications. The researcher signs in, works through a guided
+sequence, and comes out with a completed first draft plus an analysis of what is
+still missing.
 
-First, run the development server:
+**Phase 1, minimum viable product.** Deliberately narrow: Dalhousie only,
+academic researchers only, REB applications only.
+
+**REB Assistant does not make ethics determinations.** It drafts and it flags
+gaps. The Research Ethics Board decides.
+
+Client: Future Civics. Built by DigitalFlow Consulting Inc.
+Internal test build: August 10, 2026. Phase 1 handoff: September 1, 2026.
+
+---
+
+## Where things are
+
+```
+app/                  Next.js App Router
+  (auth)/             sign in, magic link callback, session actions
+  dashboard/          project list, behind the auth boundary
+lib/
+  anthropic/          redaction gate and the single model-call chokepoint
+  auth/               session handling
+  form/               the Dalhousie form structure, section numbers and word limits
+  kb/                 knowledge base ingestion, chunking, retrieval
+  supabase/           browser, server and service-role clients
+  workflow/           the state machine
+supabase/migrations/  schema, version controlled, plain SQL
+knowledge-base/
+  source/             source documents, gitignored
+  manifest.json       what has been ingested, and when
+docs/                 agreement, build plan, guardrails, handover
+```
+
+## Running it
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open http://localhost:3000. You will land on a placeholder sign-in, and from
+there an empty dashboard.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Nothing else is required right now. There is no database connected, no Anthropic
+key and no hosted account, and the app is written to say so plainly rather than
+fail. Copy `.env.local.example` to `.env.local` when those arrive.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Current state
 
-## Learn More
+Built:
 
-To learn more about Next.js, take a look at the following resources:
+- Project scaffold, Next.js App Router with TypeScript and Tailwind
+- Full schema as version-controlled SQL migrations, including row level security
+- The redaction gate, and the single chokepoint every model call must pass
+  through
+- The workflow state machine, with transitions that cannot fire without an actor
+- The Dalhousie form structure, section numbers and word limits, in one file
+- Knowledge base ingestion scan, hashing, content-hash de-duplication, chunking
+  and the manifest
+- Placeholder auth boundary and an empty dashboard
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Not built yet, in build-sequence order:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- The workflow screens: triage, intake, method check, draft, gap analysis
+- Text extraction for PDF and DOCX, and embedding generation
+- Draft assembly and .docx export in the Dalhousie form layout
+- The three AI-disclosure surfaces
+- Hosted Supabase, the Anthropic key, and the Vercel deployment
 
-## Deploy on Vercel
+## Guardrails
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Eight of them, from Section 11 of the signed agreement. They are contractual, not
+preferences, and several are enforced by structure rather than by convention. See
+[docs/guardrails.md](docs/guardrails.md) for each one and where it lives in the
+code.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The two most load-bearing:
+
+- **No column anywhere holds identifiable participant data.** The schema is the
+  enforcement.
+- **Every model call passes through `lib/anthropic/redaction.ts`.**
+  `lib/anthropic/client.ts` is the only module permitted to call the API, and it
+  runs the gate first. Do not add a second caller.

@@ -32,9 +32,16 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# The example documents required keys and holds no values, so it is committed.
+!.env.local.example
 
 # vercel
 .vercel
+
+# Knowledge base source documents. Client material: the folder is tracked, the
+# documents in it are not. The manifest records what has been ingested.
+/knowledge-base/source/*
+!/knowledge-base/source/.gitkeep
 
 # typescript
 *.tsbuildinfo
