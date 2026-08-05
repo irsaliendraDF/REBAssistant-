@@ -6,8 +6,10 @@ import { connection } from 'next/server'
 
 import type {
   AnswerMap,
+  ConsentRecord,
   DataStore,
   MethodInterpretation,
+  Profile,
   Project,
 } from './types'
 
@@ -38,6 +40,8 @@ interface MemoryDatabase {
   projects: Map<string, Project>
   answers: Map<string, AnswerMap>
   interpretations: Map<string, MethodInterpretation[]>
+  profiles: Map<string, Profile>
+  consents: ConsentRecord[]
 }
 
 const globalForStore = globalThis as unknown as { __rebMemoryDatabase?: MemoryDatabase }
@@ -52,6 +56,8 @@ function db(): MemoryDatabase {
   database.projects ??= new Map()
   database.answers ??= new Map()
   database.interpretations ??= new Map()
+  database.profiles ??= new Map()
+  database.consents ??= []
   return database
 }
 
@@ -65,6 +71,44 @@ function assertOwned(project: Project | undefined, ownerId: string): Project | n
 export const memoryStore: DataStore = {
   isEphemeral: true,
   name: 'in-memory',
+
+  async getProfile(userId) {
+    await connection()
+    return db().profiles.get(userId) ?? null
+  },
+
+  async upsertProfile(userId, input) {
+    const existing = db().profiles.get(userId)
+    const profile: Profile = {
+      id: userId,
+      fullName: null,
+      email: null,
+      role: null,
+      department: null,
+      institution: 'Dalhousie University',
+      coreCertificateStatus: null,
+      coreCertificateDate: null,
+      phone: null,
+      ...existing,
+      ...input,
+      updatedAt: new Date().toISOString(),
+    }
+    db().profiles.set(userId, profile)
+    return profile
+  },
+
+  async hasConsent(projectId, kind) {
+    await connection()
+    return db().consents.some(
+      (record) => record.projectId === projectId && record.kind === kind,
+    )
+  },
+
+  async recordConsent(record) {
+    // Append only, matching the table. Nothing here updates or removes an
+    // earlier record: a consent record that can be rewritten is not a record.
+    db().consents.push({ ...record })
+  },
 
   async listProjects(ownerId) {
     await connection()

@@ -5,8 +5,10 @@ import { DraftStep } from '@/components/draft-step'
 import { GapAnalysisStep } from '@/components/gap-analysis-step'
 import { IntakeStep } from '@/components/intake-step'
 import { MethodCheckStep } from '@/components/method-check-step'
+import { TombstoneReuseStep } from '@/components/tombstone-reuse-step'
 import { TriageStep } from '@/components/triage-step'
 import { WorkflowProgress } from '@/components/workflow-progress'
+import { hasAnythingToReuse } from '@/lib/profile/tombstone'
 import { getSession } from '@/lib/auth/session'
 import { getStore } from '@/lib/data'
 import { assembleDraft } from '@/lib/draft/assemble'
@@ -33,6 +35,14 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
   const answers = await store.getAnswers(id)
   const interpretations =
     project.state === 'method_check' ? await store.listInterpretations(id) : []
+
+  // Guardrail 7. Asked once per project, before any of the researcher's saved
+  // details could be used, and only when there is something to reuse.
+  const profile = project.state === 'triage' ? await store.getProfile(session.userId) : null
+  const needsReuseDecision =
+    project.state === 'triage' &&
+    hasAnythingToReuse(profile) &&
+    !(await store.hasConsent(id, 'tombstone_reuse'))
   const missing = readList(search.missing)
   const saved = search.saved === '1'
   const rejected = search.rejected === '1'
@@ -114,7 +124,9 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
         </div>
       ) : null}
 
-      {project.state === 'triage' ? (
+      {needsReuseDecision && profile ? (
+        <TombstoneReuseStep projectId={project.id} profile={profile} />
+      ) : project.state === 'triage' ? (
         <TriageStep projectId={project.id} answers={answers} missing={missing} />
       ) : project.state === 'method_check' ? (
         <MethodCheckStep

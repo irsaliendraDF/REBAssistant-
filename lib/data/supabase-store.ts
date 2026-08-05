@@ -4,8 +4,11 @@ import { requireClient } from '@/lib/supabase/server'
 
 import type {
   AnswerMap,
+  ConsentRecord,
   CreateProjectInput,
   DataStore,
+  Profile,
+  ProfileInput,
   InterpretationResponse,
   MethodInterpretation,
   NewInterpretation,
@@ -44,6 +47,19 @@ interface ProjectRow {
   updated_at: string
 }
 
+interface ProfileRow {
+  id: string
+  full_name: string | null
+  email: string | null
+  role: string | null
+  department: string | null
+  institution: string
+  core_certificate_status: string | null
+  core_certificate_date: string | null
+  phone: string | null
+  updated_at: string
+}
+
 interface InterpretationRow {
   id: string
   project_id: string
@@ -76,6 +92,91 @@ function toProject(row: ProjectRow): Project {
 export const supabaseStore: DataStore = {
   isEphemeral: false,
   name: 'supabase',
+
+  async getProfile(userId) {
+    const supabase = await requireClient()
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle()
+
+    if (error) throw new Error(`Could not load your details: ${error.message}`)
+    if (!data) return null
+
+    const row = data as ProfileRow
+    return {
+      id: row.id,
+      fullName: row.full_name,
+      email: row.email,
+      role: row.role,
+      department: row.department,
+      institution: row.institution,
+      coreCertificateStatus: row.core_certificate_status,
+      coreCertificateDate: row.core_certificate_date,
+      phone: row.phone,
+      updatedAt: row.updated_at,
+    }
+  },
+
+  async upsertProfile(userId, input: ProfileInput) {
+    const supabase = await requireClient()
+    const { error } = await supabase.from('profiles').upsert(
+      {
+        id: userId,
+        ...(input.fullName !== undefined ? { full_name: input.fullName } : {}),
+        ...(input.email !== undefined ? { email: input.email } : {}),
+        ...(input.role !== undefined ? { role: input.role } : {}),
+        ...(input.department !== undefined ? { department: input.department } : {}),
+        ...(input.institution !== undefined ? { institution: input.institution } : {}),
+        ...(input.coreCertificateStatus !== undefined
+          ? { core_certificate_status: input.coreCertificateStatus }
+          : {}),
+        ...(input.coreCertificateDate !== undefined
+          ? { core_certificate_date: input.coreCertificateDate }
+          : {}),
+        ...(input.phone !== undefined ? { phone: input.phone } : {}),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'id' },
+    )
+
+    if (error) throw new Error(`Could not save your details: ${error.message}`)
+
+    const profile = await supabaseStore.getProfile(userId)
+    if (!profile) throw new Error('Could not save your details.')
+    return profile
+  },
+
+  async hasConsent(projectId, kind) {
+    const supabase = await requireClient()
+    const { count, error } = await supabase
+      .from('consent_events')
+      .select('id', { count: 'exact', head: true })
+      .eq('project_id', projectId)
+      .eq('kind', kind)
+
+    if (error) throw new Error(`Could not check the consent record: ${error.message}`)
+    return (count ?? 0) > 0
+  },
+
+  async recordConsent(record: ConsentRecord) {
+    const supabase = await requireClient()
+    const { error } = await supabase.from('consent_events').insert({
+      user_id: record.userId,
+      project_id: record.projectId,
+      kind: record.kind,
+      granted: record.granted,
+      disclosure_text: record.disclosureText,
+      scope: record.scope,
+      consent_version: record.consentVersion,
+    })
+
+    // A unique index allows one tombstone reuse record per project. Hitting it
+    // means the researcher was asked twice, which is a bug worth surfacing
+    // rather than swallowing.
+    if (error) throw new Error(`Could not record your decision: ${error.message}`)
+  },
 
   async listProjects(ownerId) {
     const supabase = await requireClient()

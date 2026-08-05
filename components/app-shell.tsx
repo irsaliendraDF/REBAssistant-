@@ -25,6 +25,12 @@ export function AppShell({ session, children }: { session: Session; children: Re
             <p className="text-xs text-muted">Phase 1, work in progress</p>
           </div>
           <div className="flex items-center gap-4">
+            <a
+              href="/profile"
+              className="text-xs text-muted underline-offset-4 hover:text-ink hover:underline"
+            >
+              Your details
+            </a>
             <span className="text-xs text-muted">{session.displayName}</span>
             {/* Nothing to sign out of in review mode, so no button to offer. */}
             {session.isReview ? null : (

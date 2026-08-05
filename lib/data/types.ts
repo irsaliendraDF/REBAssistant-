@@ -33,6 +33,43 @@ export interface Project {
   updatedAt: string
 }
 
+/**
+ * Tombstone data: the researcher details that persist across projects and get
+ * reused on the next application. One row per user.
+ *
+ * Researcher details only. There is no participant equivalent of this type and
+ * there must never be one.
+ */
+export interface Profile {
+  id: string
+  fullName: string | null
+  email: string | null
+  role: string | null
+  department: string | null
+  institution: string
+  coreCertificateStatus: string | null
+  coreCertificateDate: string | null
+  phone: string | null
+  updatedAt: string
+}
+
+export type ProfileInput = Partial<Omit<Profile, 'id' | 'updatedAt'>>
+
+/** Guardrail 7. Append only: recorded, never edited, never deleted. */
+export type ConsentKind = 'tombstone_reuse' | 'app_terms' | 'ai_disclosure_ack'
+
+export interface ConsentRecord {
+  userId: string
+  projectId: string | null
+  kind: ConsentKind
+  granted: boolean
+  /** Exactly what was shown at the moment of confirming, stored verbatim. */
+  disclosureText: string
+  /** What was carried over, so the record can be reconstructed later. */
+  scope: Record<string, unknown> | null
+  consentVersion: string
+}
+
 export interface CreateProjectInput {
   ownerId: string
   title: string
@@ -111,6 +148,17 @@ export interface DataStore {
    */
   readonly isEphemeral: boolean
   readonly name: string
+
+  getProfile(userId: string): Promise<Profile | null>
+  upsertProfile(userId: string, input: ProfileInput): Promise<Profile>
+
+  /**
+   * Whether this consent has already been recorded for this project. Checked
+   * before asking, so the researcher is asked once per project rather than on
+   * every visit, which is the interaction the agreement's Section 9 settles on.
+   */
+  hasConsent(projectId: string, kind: ConsentKind): Promise<boolean>
+  recordConsent(record: ConsentRecord): Promise<void>
 
   listProjects(ownerId: string): Promise<Project[]>
   getProject(id: string, ownerId: string): Promise<Project | null>

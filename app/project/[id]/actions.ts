@@ -14,6 +14,11 @@ import {
   visibleSections,
 } from '@/lib/intake/questions'
 import { allResolved, deriveInterpretations, hasRejection } from '@/lib/method/interpret'
+import {
+  TOMBSTONE_CONSENT_VERSION,
+  filledFields,
+  reuseDisclosure,
+} from '@/lib/profile/tombstone'
 import { assertValidTransition } from '@/lib/workflow/states'
 import type { AnswerMap } from '@/lib/data/types'
 
@@ -274,6 +279,48 @@ export async function advanceToDraft(formData: FormData) {
     reason: 'Researcher confirmed the reading of the methodology',
   })
   await store.updateProject(projectId, session.userId, { state: 'draft' })
+
+  redirect(`/project/${projectId}`)
+}
+
+/**
+ * Guardrail 7. Records the researcher's decision about reusing their saved
+ * details in this application, once per project.
+ *
+ * Both answers are recorded, and the exact wording they were shown is stored on
+ * the record rather than a version number alone, so the decision can be
+ * reconstructed later even after this text changes.
+ */
+export async function respondToReuse(formData: FormData) {
+  const session = await getSession()
+  if (!session) redirect('/sign-in')
+
+  const projectId = String(formData.get('projectId') ?? '')
+  const granted = String(formData.get('intent') ?? '') === 'accept'
+
+  const store = getStore()
+  const project = await store.getProject(projectId, session.userId)
+  if (!project) redirect('/dashboard')
+
+  // Asked once per project. A second answer would fail the unique index on the
+  // table anyway, and re-asking would be its own bug.
+  if (await store.hasConsent(projectId, 'tombstone_reuse')) {
+    redirect(`/project/${projectId}`)
+  }
+
+  const profile = await store.getProfile(session.userId)
+
+  await store.recordConsent({
+    userId: session.userId,
+    projectId,
+    kind: 'tombstone_reuse',
+    granted,
+    disclosureText: reuseDisclosure(profile),
+    scope: granted
+      ? Object.fromEntries(filledFields(profile).map((field) => [field.label, field.value]))
+      : null,
+    consentVersion: TOMBSTONE_CONSENT_VERSION,
+  })
 
   redirect(`/project/${projectId}`)
 }
