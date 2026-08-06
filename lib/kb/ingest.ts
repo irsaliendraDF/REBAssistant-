@@ -3,8 +3,12 @@ import 'server-only'
 import { readFile, readdir } from 'node:fs/promises'
 import { extname, resolve } from 'node:path'
 
+import { createAdminClient } from '@/lib/supabase/admin'
+
 import { SOURCE_DIR, classify } from './config'
-import { chunkText } from './chunk'
+import { chunkText, detectFormSection } from './chunk'
+import { extractDocument } from './extract'
+import { splitGuidanceBySection } from './sections'
 import { hashContent } from './hash'
 import { type Manifest, isAlreadyIngested, readManifest, writeManifest } from './manifest'
 
@@ -64,7 +68,14 @@ export async function plan(root = process.cwd()): Promise<IngestPlan> {
     filenames = (await readdir(sourcePath, { withFileTypes: true }))
       .filter((entry) => entry.isFile() && !entry.name.startsWith('.'))
       .map((entry) => entry.name)
-      .sort()
+      // Canonical names before their `-2` copies. De-duplication keeps whichever
+      // is seen first, and the winner's filename becomes the citation a Board
+      // reads. "confidentiality-agreement-template-2" is not what that document
+      // is called.
+      .sort((a, b) => {
+        const suffixed = Number(isNumberedCopy(a)) - Number(isNumberedCopy(b))
+        return suffixed !== 0 ? suffixed : a.localeCompare(b)
+      })
   } catch {
     // Folder does not exist yet, which is the normal state before the first drop.
     filenames = []
@@ -98,15 +109,18 @@ export async function plan(root = process.cwd()): Promise<IngestPlan> {
       continue
     }
 
-    if (SUPPORTED_TEXT_FORMATS.has(extension)) {
-      const chunks = chunkText(bytes.toString('utf8'))
+    if (SUPPORTED_TEXT_FORMATS.has(extension) || NEEDS_EXTRACTOR.has(extension)) {
+      const chunks = SUPPORTED_TEXT_FORMATS.has(extension)
+        ? chunkText(bytes.toString('utf8'))
+        : []
       items.push({
         filename,
         contentHash,
         docType,
         citationLabel,
         status: 'new',
-        chunkCount: chunks.length,
+        // Only known without extracting, which plan() deliberately does not do.
+        chunkCount: chunks.length || undefined,
       })
       continue
     }
@@ -116,7 +130,7 @@ export async function plan(root = process.cwd()): Promise<IngestPlan> {
       contentHash,
       docType,
       citationLabel,
-      status: NEEDS_EXTRACTOR.has(extension) ? 'unsupported_format' : 'unsupported_format',
+      status: 'unsupported_format',
     })
   }
 
@@ -130,17 +144,166 @@ export async function plan(root = process.cwd()): Promise<IngestPlan> {
 }
 
 /**
- * Full ingest: extract, chunk, embed, store, update the manifest.
+ * Full ingest: extract, split, store, update the manifest.
  *
- * Blocked on the two pieces named at the top of this file. It throws rather than
- * partially succeeding, because a knowledge base that silently holds half of
- * TCPS2 is worse than one that holds none of it and says so.
+ * Writes with the service role client, because `kb_documents` and `kb_chunks`
+ * are readable by signed-in researchers and writable by nobody. Ingestion is not
+ * something the application does; it is something a maintainer does, from a
+ * machine, when the guidance changes.
+ *
+ * No embeddings are generated. Guidance is retrieved by form section, which is
+ * printed in the document rather than inferred from a similarity score. See
+ * `lib/kb/sections.ts` and `docs/decisions.md`.
  */
-export async function ingestAll(_root = process.cwd()): Promise<never> {
-  throw new Error(
-    'Full ingest is not wired yet. It needs a PDF and DOCX text extractor, and an embedding API key. ' +
-      'Run plan() to see what would be ingested.',
-  )
+export interface IngestResult {
+  documentsIngested: number
+  chunksWritten: number
+  sectionsMapped: number
+  skipped: { filename: string; reason: string }[]
+}
+
+export async function ingestAll(root = process.cwd()): Promise<IngestResult> {
+  const supabase = createAdminClient()
+  if (!supabase) {
+    throw new Error(
+      'Ingestion needs SUPABASE_SERVICE_ROLE_KEY. It writes to tables that row level ' +
+        'security makes read-only for everyone else.',
+    )
+  }
+
+  const sourcePath = resolve(root, SOURCE_DIR)
+  const manifest = await readManifest(root)
+  const plannedRun = await plan(root)
+
+  const result: IngestResult = {
+    documentsIngested: 0,
+    chunksWritten: 0,
+    sectionsMapped: 0,
+    skipped: [],
+  }
+
+  for (const item of plannedRun.items) {
+    if (item.status === 'already_ingested' || item.status === 'duplicate_content') {
+      result.skipped.push({ filename: item.filename, reason: item.status })
+      continue
+    }
+
+    let extracted
+    try {
+      extracted = await extractDocument(resolve(sourcePath, item.filename))
+    } catch (error) {
+      result.skipped.push({
+        filename: item.filename,
+        reason: error instanceof Error ? error.message : 'extraction failed',
+      })
+      continue
+    }
+
+    const { data: document, error: documentError } = await supabase
+      .from('kb_documents')
+      .upsert(
+        {
+          title: item.filename.replace(/\.[^.]+$/, ''),
+          source_path: item.filename,
+          content_hash: item.contentHash,
+          doc_type: item.docType,
+          citation_label: item.citationLabel,
+          page_count: extracted.pageCount,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'content_hash' },
+      )
+      .select('id')
+      .single()
+
+    if (documentError || !document) {
+      throw new Error(`Could not store ${item.filename}: ${documentError?.message ?? 'no row'}`)
+    }
+
+    const documentId = (document as { id: string }).id
+
+    // Replace rather than append, so re-ingesting a corrected document does not
+    // leave the old text alongside the new for retrieval to pick between.
+    const { error: clearError } = await supabase
+      .from('kb_chunks')
+      .delete()
+      .eq('document_id', documentId)
+    if (clearError) throw new Error(`Could not clear old chunks: ${clearError.message}`)
+
+    const chunks = buildChunks(item.docType, item.citationLabel, extracted.text)
+
+    const { error: chunkError } = await supabase.from('kb_chunks').insert(
+      chunks.map((chunk, index) => ({
+        document_id: documentId,
+        chunk_index: index,
+        content: chunk.content,
+        citation: chunk.citation,
+        form_section: chunk.formSection ?? null,
+        embedding: null,
+      })),
+    )
+    if (chunkError) throw new Error(`Could not store chunks: ${chunkError.message}`)
+
+    manifest.documents = manifest.documents.filter(
+      (entry) => entry.contentHash !== item.contentHash,
+    )
+    manifest.documents.push({
+      contentHash: item.contentHash,
+      filename: item.filename,
+      title: item.filename.replace(/\.[^.]+$/, ''),
+      docType: item.docType,
+      citationLabel: item.citationLabel,
+      chunkCount: chunks.length,
+      ingestedAt: new Date().toISOString(),
+    })
+
+    result.documentsIngested += 1
+    result.chunksWritten += chunks.length
+    result.sectionsMapped += chunks.filter((chunk) => chunk.formSection).length
+  }
+
+  await writeManifest(manifest, root)
+  return result
+}
+
+interface BuiltChunk {
+  content: string
+  citation: string
+  formSection?: string
+}
+
+/**
+ * The guidelines document is the one that maps onto the form, so it is split by
+ * section number and every chunk carries the section it belongs to. Everything
+ * else is chunked by size, and a section is attached only where the text names
+ * one itself.
+ */
+function buildChunks(docType: string, citationLabel: string, text: string): BuiltChunk[] {
+  if (docType === 'guideline') {
+    const sections = splitGuidanceBySection(text)
+    if (sections.length > 0) {
+      return sections.map((section) => ({
+        content: section.text,
+        citation: `${citationLabel}, s. ${section.formSection} ${section.heading}`,
+        formSection: section.formSection,
+      }))
+    }
+    // A guidance document with no numbered sections still belongs in the base;
+    // it just cannot be routed to one.
+  }
+
+  return chunkText(text).map((chunk, index) => ({
+    content: chunk.content,
+    citation: `${citationLabel}, part ${index + 1}`,
+    // The chunker already reports a heading it recognised. Fall back to reading
+    // the text only where it did not.
+    formSection: chunk.formSection ?? detectFormSection(chunk.content),
+  }))
 }
 
 export { readManifest, writeManifest, type Manifest }
+
+/** True for the `-2` style duplicates several source documents arrive as. */
+function isNumberedCopy(filename: string): boolean {
+  return /-\d+\.[^.]+$/.test(filename)
+}

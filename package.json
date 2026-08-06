@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "ingest": "vite-node --config scripts/ingest.config.mts scripts/ingest.ts",
+    "ingest:plan": "vite-node --config scripts/ingest.config.mts scripts/ingest.ts -- --plan"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",
@@ -31,6 +33,7 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "unpdf": "^1.8.0",
+    "vite-node": "^6.0.0",
     "vitest": "^4.1.10"
   }
 }
