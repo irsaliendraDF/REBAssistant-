@@ -2,6 +2,8 @@ import 'server-only'
 
 import { requireClient } from '@/lib/supabase/server'
 
+import { withClockSkewRetry } from './clock-skew'
+
 import type {
   AnswerMap,
   ConsentRecord,
@@ -128,7 +130,7 @@ function toProject(row: ProjectRow): Project {
   }
 }
 
-export const supabaseStore: DataStore = {
+const store: DataStore = {
   isEphemeral: false,
   name: 'supabase',
 
@@ -496,3 +498,10 @@ export const supabaseStore: DataStore = {
     if (error) throw new Error(`Could not record the step change: ${error.message}`)
   },
 }
+
+/**
+ * Wrapped so a session token that is a few milliseconds too fresh is waited out
+ * rather than surfacing as a 500 on the first page after sign-in. See
+ * `lib/data/clock-skew.ts` for what was actually happening and why.
+ */
+export const supabaseStore: DataStore = withClockSkewRetry(store)
