@@ -47,8 +47,11 @@ export const DOC_TYPE_RULES: { match: RegExp; docType: DocType; citationLabel: s
     citationLabel: 'Confidentiality agreement template',
   },
   {
+    // Guidance on how to write recruitment messages, not a message to fill in.
+    // The difference matters at citation time: a researcher told "see the
+    // recruitment template" will go looking for a document that does not exist.
     match: /hints-for-research-recruitment/i,
-    docType: 'template',
+    docType: 'guideline',
     citationLabel: 'Recruitment message guidance',
   },
   { match: /tcps/i, docType: 'tcps2', citationLabel: 'TCPS 2' },
