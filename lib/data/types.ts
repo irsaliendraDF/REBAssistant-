@@ -200,6 +200,12 @@ export interface DataStore {
    * every visit, which is the interaction the agreement's Section 9 settles on.
    */
   hasConsent(projectId: string, kind: ConsentKind): Promise<boolean>
+  /**
+   * The same question asked of the user rather than a project. The app's terms
+   * and the AI-use disclosure are accepted once by a person, not once per
+   * application, and those records carry a null `projectId`.
+   */
+  hasUserConsent(userId: string, kind: ConsentKind): Promise<boolean>
   recordConsent(record: ConsentRecord): Promise<void>
 
   listProjects(ownerId: string): Promise<Project[]>

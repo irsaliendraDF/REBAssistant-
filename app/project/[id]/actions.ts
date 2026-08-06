@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 
 import { getSession } from '@/lib/auth/session'
 import { getStore } from '@/lib/data'
+import { DISCLOSURE_VERSION, PARTICIPANT_CONSENT_DISCLOSURE } from '@/lib/disclosure/text'
 import { draftSection } from '@/lib/draft/generate'
 import { SECTIONS_BY_NUMBER, countWords, wordLimitFor } from '@/lib/form/dalhousie-sections'
 import {
@@ -528,6 +529,36 @@ export async function saveSectionEdit(formData: FormData) {
   })
 
   redirect(`/project/${projectId}?drafted=${encodeURIComponent(formSection)}`)
+}
+
+/**
+ * Guardrail 8, surface (b), and guardrail 7's logging requirement.
+ *
+ * Recorded per project rather than per person: a researcher who ran one study
+ * two years ago has not thereby handled the consent form for this one. The
+ * wording is stored verbatim, because it is a placeholder and will change.
+ */
+export async function acknowledgeParticipantDisclosure(formData: FormData) {
+  const session = await getSession()
+  if (!session) redirect('/sign-in')
+
+  const projectId = String(formData.get('projectId') ?? '')
+
+  const store = getStore()
+  const project = await store.getProject(projectId, session.userId)
+  if (!project) redirect('/dashboard')
+
+  await store.recordConsent({
+    userId: session.userId,
+    projectId,
+    kind: 'ai_disclosure_ack',
+    granted: true,
+    disclosureText: PARTICIPANT_CONSENT_DISCLOSURE,
+    scope: null,
+    consentVersion: DISCLOSURE_VERSION,
+  })
+
+  redirect(`/project/${projectId}`)
 }
 
 function buildRoutingNote(flags: { indigenous: boolean; communityEngaged: boolean }): string | null {

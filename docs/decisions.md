@@ -189,6 +189,25 @@ back silently and the researcher meets the message at drafting, where it names
 what to remove and they can act on it. Stopping the workflow at a step with no
 remedy would be a dead end.
 
+**The app terms block the dashboard rather than sitting above it.** The
+disclosure says what a researcher types is sent to a model outside Canada, and
+some of it constrains what they should enter. Placed beside a "Start a New
+Application" button it would be read after the fact, which is not disclosure.
+There is no dismiss and no "later", and `createProject` re-checks the consent, so
+the gate is a rule rather than a layout choice.
+
+**Both consents store the wording verbatim, not a version number.** A record
+saying "accepted placeholder-2026-08" is worthless once that text is replaced,
+and it will be replaced: every disclosure string in the repo is a first draft
+pending review.
+
+**The participant disclosure is in the .docx, not only on screen.** The
+participant is the only person in this chain who never sees the tool, so the
+wording reaching them depends on the researcher carrying it into their own
+consent form. That is a handoff, and it travels with the artefact they actually
+work from. The on-screen copy records an acknowledgement per project, because a
+researcher who ran a study two years ago has not thereby handled this one.
+
 **The export route reads the drafts too.** The .docx is the copy that reaches the
 Board. An export assembled without them would carry a disclosure stating nothing
 was AI-generated, which is the one sentence in the document that must never be

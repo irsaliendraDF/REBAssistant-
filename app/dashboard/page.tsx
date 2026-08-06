@@ -1,5 +1,6 @@
 import Link from 'next/link'
 
+import { TermsGate } from '@/components/terms-gate'
 import { WorkflowProgress } from '@/components/workflow-progress'
 import { getSession } from '@/lib/auth/session'
 import { getStore } from '@/lib/data'
@@ -15,6 +16,14 @@ export const metadata = {
 export default async function DashboardPage() {
   const session = await getSession()
   const store = getStore()
+
+  // Guardrail 8, surface (a). Nothing else on this screen renders until the
+  // researcher has been told what the tool does with what they type, because
+  // by the time they have typed it, telling them is too late.
+  if (session && !(await store.hasUserConsent(session.userId, 'app_terms'))) {
+    return <TermsGate />
+  }
+
   const projects = session ? await store.listProjects(session.userId) : []
 
   return (

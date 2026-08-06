@@ -207,6 +207,18 @@ export const supabaseStore: DataStore = {
     return (count ?? 0) > 0
   },
 
+  async hasUserConsent(userId, kind) {
+    const supabase = await requireClient()
+    const { count, error } = await supabase
+      .from('consent_events')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('kind', kind)
+
+    if (error) throw new Error(`Could not check the consent record: ${error.message}`)
+    return (count ?? 0) > 0
+  },
+
   async recordConsent(record: ConsentRecord) {
     const supabase = await requireClient()
     const { error } = await supabase.from('consent_events').insert({

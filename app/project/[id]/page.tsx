@@ -5,6 +5,7 @@ import { DraftStep } from '@/components/draft-step'
 import { GapAnalysisStep } from '@/components/gap-analysis-step'
 import { IntakeStep } from '@/components/intake-step'
 import { MethodCheckStep } from '@/components/method-check-step'
+import { ParticipantDisclosure } from '@/components/participant-disclosure'
 import { TombstoneReuseStep } from '@/components/tombstone-reuse-step'
 import { TriageStep } from '@/components/triage-step'
 import { WorkflowProgress } from '@/components/workflow-progress'
@@ -39,6 +40,14 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
   const interpretations =
     project.state === 'method_check' ? await store.listInterpretations(id) : []
   const drafts = project.state === 'draft' ? await store.listDrafts(id) : []
+
+  // Guardrail 8, surface (b). Shown from drafting onwards, which is the first
+  // point at which there is a document for the researcher to carry it into.
+  const showsParticipantDisclosure =
+    project.state === 'draft' || project.state === 'gap_analysis' || project.state === 'complete'
+  const disclosureAcknowledged = showsParticipantDisclosure
+    ? await store.hasConsent(id, 'ai_disclosure_ack')
+    : false
 
   // Guardrail 7. Asked once per project, before any of the researcher's saved
   // details could be used, and only when there is something to reuse.
@@ -184,6 +193,10 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
           </a>
         </div>
       )}
+
+      {showsParticipantDisclosure ? (
+        <ParticipantDisclosure projectId={project.id} acknowledged={disclosureAcknowledged} />
+      ) : null}
 
       <p className="border-t border-line pt-6 text-xs leading-relaxed text-muted">
         Research Ethics Board Assistant helps you prepare an application. It does not review,

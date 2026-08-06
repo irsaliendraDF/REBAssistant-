@@ -110,6 +110,13 @@ export const memoryStore: DataStore = {
     )
   },
 
+  async hasUserConsent(userId, kind) {
+    await connection()
+    return db().consents.some(
+      (record) => record.userId === userId && record.kind === kind,
+    )
+  },
+
   async recordConsent(record) {
     // Append only, matching the table. Nothing here updates or removes an
     // earlier record: a consent record that can be rewritten is not a record.

@@ -9,6 +9,8 @@ import {
   TextRun,
 } from 'docx'
 
+import { PARTICIPANT_CONSENT_DISCLOSURE } from '@/lib/disclosure/text'
+
 import type { DraftPackage, DraftSection } from './assemble'
 
 /**
@@ -97,6 +99,30 @@ export async function renderDocx(draft: DraftPackage): Promise<Buffer> {
   for (const section of draft.sections) {
     children.push(...sectionParagraphs(section))
   }
+
+  // Guardrail 8, surface (b). It travels with the document because that is the
+  // artefact the researcher works from when they write their consent form. Left
+  // only on a screen it would be read once and forgotten, and the participant is
+  // the one person in this chain who never sees the tool at all.
+  children.push(
+    paragraphSpacer(),
+    new Paragraph({
+      text: 'For Your Participant Consent Form',
+      heading: HeadingLevel.HEADING_1,
+    }),
+    new Paragraph({
+      children: [
+        new TextRun({
+          text:
+            'This is not part of the application. Include the following in the consent form ' +
+            'participants read, so they are told that an AI-assisted system was involved.',
+          italics: true,
+        }),
+      ],
+    }),
+    paragraphSpacer(),
+    ...disclosureParagraphs(PARTICIPANT_CONSENT_DISCLOSURE),
+  )
 
   const document = new Document({
     creator: 'Research Ethics Board Assistant',
