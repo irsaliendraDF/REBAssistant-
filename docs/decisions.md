@@ -17,6 +17,24 @@ project creation; changing it is a rebuild and a data migration, not a setting.
 Note that Anthropic API calls leave Canada regardless, which is precisely why the
 redaction gate exists.
 
+**Canadian residency is scoped to participant data, not to every byte the system
+touches.** This was open question 1 in the build plan and is now settled by the
+client. It has one visible consequence: there is no `vercel.json` pinning
+function execution to a Canadian region, so the application runs in Vercel's
+default region while its database sits in Montreal. That is a deliberate choice
+and not an oversight.
+
+The commitment still holds, because of how the system is built rather than where
+it runs. There is no participant data anywhere in it: the schema has no
+participant table and no field for a participant's name, contact details or
+identifiers, the researcher is told not to enter any, and the redaction gate
+refuses to transmit identifiable personal information. Participant data has no
+residency problem here because it has no residence here.
+
+Anyone picking this up should know the scope was narrowed deliberately. If a
+later phase ever stores anything about a participant, this decision has to be
+reopened before that happens, not after.
+
 **Everything above the data layer talks to a `DataStore` interface, never to
 Supabase directly.** Built when there was no database at all, so the app could be
 developed and demonstrated before credentials existed. It also means the
