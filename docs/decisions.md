@@ -170,6 +170,25 @@ write time.** A project flagged as community-engaged after 2.3 was drafted must
 stop showing that draft. Checking only at generation would make guardrail 4 hold
 for projects flagged during triage and quietly fail for projects flagged later.
 
+**Method check readings are model-reasoned, and the fallback is honest.** A
+rule-derived reading restates the researcher's answers, which makes it faithful
+and therefore impossible to disagree with, which makes confirming it prove
+nothing. Guardrail 3 is only a real check once the thing being checked can fail,
+so the reading now asks what follows from the answers rather than what they said.
+Where the model is unavailable, refuses, or returns something unusable, it falls
+back to the rule-derived reading rather than stranding the researcher at the
+step, and `modelVersion: null` marks which rounds were which.
+
+**One call covers every methodology section, not one call each.** Half the
+misreadings worth catching are between sections: a recruitment route that does
+not reach the population described, consent that does not match how the data is
+captured. Per-section calls cannot see those.
+
+**A redaction refusal at method check is not shown at method check.** It falls
+back silently and the researcher meets the message at drafting, where it names
+what to remove and they can act on it. Stopping the workflow at a step with no
+remedy would be a dead end.
+
 **The export route reads the drafts too.** The .docx is the copy that reaches the
 Board. An export assembled without them would carry a disclosure stating nothing
 was AI-generated, which is the one sentence in the document that must never be
@@ -183,11 +202,10 @@ wrong.
 expert to revise. Wording, ordering, and what is required versus optional are all
 open. It is one file, so her feedback is cheap to apply.
 
-**Method check readings are rule-derived, not model-reasoned.** They restate
-answers rather than interpreting them, which means they cannot misunderstand,
-which makes confirming them a weaker check than the step ultimately exists for.
-The screen says so. `modelVersion: null` marks a rule-derived reading, which is
-what will distinguish the rounds later.
+**The structured-output path has not been exercised against the live API.**
+`interpretMethodology` is the only call that asks for a JSON schema. The unit
+tests mock the client, and the machine this was built on has no API key, so the
+schema itself is unverified. First walkthrough in production is the check.
 
 **The embedding dimension is 1024, stated in exactly two places**: the knowledge
 base migration and `lib/kb/config.ts`. Changing it means a migration and a full

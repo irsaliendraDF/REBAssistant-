@@ -15,7 +15,8 @@ import {
   triageFlags,
   visibleSections,
 } from '@/lib/intake/questions'
-import { allResolved, deriveInterpretations, hasRejection } from '@/lib/method/interpret'
+import { allResolved, hasRejection } from '@/lib/method/interpret'
+import { interpretMethodology } from '@/lib/method/interpret-ai'
 import {
   TOMBSTONE_CONSENT_VERSION,
   filledFields,
@@ -167,10 +168,16 @@ export async function saveIntakeSection(formData: FormData) {
   })
 
   // Built from the answers as they now stand, replacing any set from a previous
-  // round that the researcher sent back.
+  // round that the researcher sent back. Model-reasoned where the model is
+  // available, rule-derived where it is not: `interpretMethodology` decides, and
+  // `modelVersion` records which of the two the researcher was shown.
   await store.replaceInterpretations(
     projectId,
-    deriveInterpretations({ ...existing, ...answers }),
+    await interpretMethodology({
+      project,
+      answers: { ...existing, ...answers },
+      userId: session.userId,
+    }),
   )
 
   await store.recordTransition({

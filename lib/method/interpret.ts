@@ -25,7 +25,7 @@ import { allQuestions } from '@/lib/intake/questions'
  */
 
 /** The sections whose answers describe how the research is actually done. */
-const METHODOLOGY_SECTIONS = ['2.3', '2.4', '2.5', '2.6', '2.7', '2.8'] as const
+export const METHODOLOGY_SECTIONS = ['2.3', '2.4', '2.5', '2.6', '2.7', '2.8'] as const
 
 export function deriveInterpretations(answers: AnswerMap): NewInterpretation[] {
   const questions = allQuestions()

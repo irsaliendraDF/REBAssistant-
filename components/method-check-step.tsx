@@ -52,7 +52,15 @@ export function MethodCheckStep({
           it to be. Once the model is connected, this step becomes a genuine check on whether the
           tool has understood your methodology.
         </p>
-      ) : null}
+      ) : (
+        <p className="rounded-md border border-line bg-surface px-4 py-3 text-xs leading-relaxed text-muted">
+          <span className="font-medium">These are readings, not summaries.</span> Each one says what
+          the tool understood you to be doing, which means it can be wrong. Read them as a
+          stranger's account of your study and correct anything that is not right. Nothing is
+          drafted from a reading you have not answered, and rejecting one sends you back to intake
+          to fix the answers behind it.
+        </p>
+      )}
 
       {unresolved ? (
         <p className="rounded-md border border-alert/40 bg-alert-soft px-4 py-3 text-xs text-alert">
