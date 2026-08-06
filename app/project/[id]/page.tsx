@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 
-import { BackLink } from '@/components/back-link'
+import { BackButton, BackLink } from '@/components/back-link'
 import { DraftStep } from '@/components/draft-step'
 import { GapAnalysisStep } from '@/components/gap-analysis-step'
 import { IntakeStep } from '@/components/intake-step'
@@ -13,7 +13,7 @@ import { getSession } from '@/lib/auth/session'
 import { getStore } from '@/lib/data'
 import { assembleDraft } from '@/lib/draft/assemble'
 import { isAnthropicConfigured } from '@/lib/env'
-import { analyseGaps } from '@/lib/gaps/analyse'
+import { analyseGaps, type GapSeverity } from '@/lib/gaps/analyse'
 import { visibleSections } from '@/lib/intake/questions'
 import { displayTitle } from '@/lib/text'
 import { STATE_DEFINITIONS, canGoBack, previousState } from '@/lib/workflow/states'
@@ -77,12 +77,9 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
       {canGoBack(project.state) && !needsReuseDecision ? (
         <form action={stepBack}>
           <input type="hidden" name="projectId" value={project.id} />
-          <button
-            type="submit"
-            className="text-sm font-medium text-forest underline-offset-4 hover:underline"
-          >
-            ← Back to {STATE_DEFINITIONS[previousState(project.state)!].label}
-          </button>
+          <BackButton>
+            Back to {STATE_DEFINITIONS[previousState(project.state)!].label}
+          </BackButton>
         </form>
       ) : null}
 
@@ -152,6 +149,7 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
         <GapAnalysisStep
           projectId={project.id}
           findings={analyseGaps(project, answers)}
+          activeSeverity={readSeverity(search.severity)}
           modelConnected={isAnthropicConfigured}
         />
       ) : (
@@ -177,6 +175,12 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
       </p>
     </div>
   )
+}
+
+/** An unrecognised filter shows everything, rather than an empty list. */
+function readSeverity(value: string | string[] | undefined): GapSeverity | undefined {
+  const raw = readOne(value)
+  return raw === 'missing' || raw === 'worth_reviewing' || raw === 'thin' ? raw : undefined
 }
 
 function readOne(value: string | string[] | undefined): string | undefined {

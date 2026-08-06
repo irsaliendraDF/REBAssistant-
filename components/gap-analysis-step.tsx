@@ -12,17 +12,44 @@ import { countBySeverity, type GapFinding, type GapSeverity } from '@/lib/gaps/a
  * the tool is not entitled to give. Continuing is always available, including
  * with findings outstanding, because the Board decides what matters and the
  * researcher decides what to act on.
+ *
+ * The counts are filters. Eighteen findings in one list is a wall; taking the
+ * five incomplete sections first, finishing them, then looking at the rest is
+ * how people actually work through a list this long. Filtering is a query
+ * parameter rather than client state, so a filtered view survives a reload, can
+ * be left open in a tab, and can be sent to a supervisor as a link.
  */
+
+const SEVERITY_ORDER: GapSeverity[] = ['missing', 'worth_reviewing', 'thin']
+
+const FILTER_LABELS: Record<GapSeverity, string> = {
+  missing: 'not complete',
+  worth_reviewing: 'worth reviewing',
+  thin: 'brief',
+}
+
+const BADGE_LABELS: Record<GapSeverity, string> = {
+  missing: 'Not complete',
+  worth_reviewing: 'Worth reviewing',
+  thin: 'Brief',
+}
+
 export function GapAnalysisStep({
   projectId,
   findings,
+  activeSeverity,
   modelConnected,
 }: {
   projectId: string
   findings: GapFinding[]
+  /** Undefined shows everything. */
+  activeSeverity?: GapSeverity
   modelConnected: boolean
 }) {
   const counts = countBySeverity(findings)
+  const visible = activeSeverity
+    ? findings.filter((finding) => finding.severity === activeSeverity)
+    : findings
 
   return (
     <div className="space-y-6">
@@ -45,38 +72,56 @@ export function GapAnalysisStep({
         </div>
       ) : (
         <>
-          <div className="flex flex-wrap gap-2 text-xs">
-            <Count label="not complete" value={counts.missing} />
-            <Count label="worth reviewing" value={counts.worth_reviewing} />
-            <Count label="brief" value={counts.thin} />
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <FilterPill
+              projectId={projectId}
+              label="all findings"
+              value={findings.length}
+              active={activeSeverity === undefined}
+            />
+            {SEVERITY_ORDER.map((severity) => (
+              <FilterPill
+                key={severity}
+                projectId={projectId}
+                severity={severity}
+                label={FILTER_LABELS[severity]}
+                value={counts[severity]}
+                active={activeSeverity === severity}
+              />
+            ))}
           </div>
 
-          <ul className="space-y-3">
-            {findings.map((finding, index) => (
-              <li
-                key={index}
-                className="rounded-lg border border-line bg-white p-5"
-              >
-                <div className="flex flex-wrap items-center gap-2">
-                  <SeverityBadge severity={finding.severity} />
-                  {finding.formSection ? (
-                    <Link
-                      href={`/project/${projectId}?section=${encodeURIComponent(finding.formSection)}`}
-                      className="font-mono text-xs text-muted underline-offset-4 hover:underline"
-                    >
-                      Section {finding.formSection}
-                    </Link>
+          {visible.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-line bg-white p-8 text-center">
+              <p className="text-sm text-muted">
+                Nothing in this group. Choose another, or show all findings.
+              </p>
+            </div>
+          ) : (
+            <ul className="space-y-3">
+              {visible.map((finding, index) => (
+                <li key={index} className="rounded-lg border border-line bg-white p-5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <SeverityBadge severity={finding.severity} />
+                    {finding.formSection ? (
+                      <Link
+                        href={`/project/${projectId}?section=${encodeURIComponent(finding.formSection)}`}
+                        className="font-mono text-xs text-muted underline-offset-4 hover:underline"
+                      >
+                        Section {finding.formSection}
+                      </Link>
+                    ) : null}
+                  </div>
+
+                  <p className="mt-2 text-sm leading-relaxed text-ink">{finding.finding}</p>
+
+                  {finding.tcps2Reference ? (
+                    <p className="mt-2 text-xs text-muted">{finding.tcps2Reference}</p>
                   ) : null}
-                </div>
-
-                <p className="mt-2 text-sm leading-relaxed text-ink">{finding.finding}</p>
-
-                {finding.tcps2Reference ? (
-                  <p className="mt-2 text-xs text-muted">{finding.tcps2Reference}</p>
-                ) : null}
-              </li>
-            ))}
-          </ul>
+                </li>
+              ))}
+            </ul>
+          )}
         </>
       )}
 
@@ -98,11 +143,34 @@ export function GapAnalysisStep({
   )
 }
 
-function Count({ label, value }: { label: string; value: number }) {
+function FilterPill({
+  projectId,
+  severity,
+  label,
+  value,
+  active,
+}: {
+  projectId: string
+  severity?: GapSeverity
+  label: string
+  value: number
+  active: boolean
+}) {
+  const href = severity ? `/project/${projectId}?severity=${severity}` : `/project/${projectId}`
+
   return (
-    <span className="rounded-full border border-line bg-white px-3 py-1.5 text-muted">
-      <span className="font-medium text-ink">{value}</span> {label}
-    </span>
+    <Link
+      href={href}
+      aria-current={active ? 'true' : undefined}
+      className={[
+        'rounded-full border px-3 py-1.5 transition',
+        active
+          ? 'border-forest bg-forest font-medium text-white'
+          : 'border-line bg-white text-muted hover:border-forest hover:text-ink',
+      ].join(' ')}
+    >
+      <span className={active ? '' : 'font-medium text-ink'}>{value}</span> {label}
+    </Link>
   )
 }
 
@@ -113,15 +181,9 @@ function SeverityBadge({ severity }: { severity: GapSeverity }) {
     thin: 'bg-surface-2 text-muted',
   }
 
-  const labels: Record<GapSeverity, string> = {
-    missing: 'Not complete',
-    worth_reviewing: 'Worth reviewing',
-    thin: 'Brief',
-  }
-
   return (
     <span className={`rounded-full px-2.5 py-1 text-[10px] font-medium ${styles[severity]}`}>
-      {labels[severity]}
+      {BADGE_LABELS[severity]}
     </span>
   )
 }
