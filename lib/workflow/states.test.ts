@@ -3,8 +3,11 @@ import { describe, expect, it } from 'vitest'
 import {
   PROJECT_STATES,
   STATE_DEFINITIONS,
+  assertValidStepBack,
   assertValidTransition,
+  canGoBack,
   canTransition,
+  previousState,
   progressPercent,
   stateIndex,
   type ProjectState,
@@ -112,6 +115,62 @@ describe('transitions', () => {
         actorId: 'user-1',
       }),
     ).not.toThrow()
+  })
+})
+
+describe('stepping back', () => {
+  it('goes back exactly one step from anywhere after the first', () => {
+    expect(previousState('intake')).toBe('triage')
+    expect(previousState('method_check')).toBe('intake')
+    expect(previousState('draft')).toBe('method_check')
+    expect(previousState('gap_analysis')).toBe('draft')
+    expect(previousState('complete')).toBe('gap_analysis')
+  })
+
+  it('has nowhere to go back to from the first step', () => {
+    expect(previousState('triage')).toBeNull()
+    expect(canGoBack('triage')).toBe(false)
+  })
+
+  it('is offered from every other step', () => {
+    for (const state of PROJECT_STATES.filter((s) => s !== 'triage')) {
+      expect(canGoBack(state)).toBe(true)
+    }
+  })
+
+  it('refuses to skip more than one step at a time', () => {
+    expect(() =>
+      assertValidStepBack({
+        projectId: 'p1',
+        from: 'complete',
+        to: 'intake',
+        actorId: 'user-1',
+      }),
+    ).toThrow(/one step at a time/)
+  })
+
+  it('refuses a step back with no actor', () => {
+    expect(() =>
+      assertValidStepBack({ projectId: 'p1', from: 'draft', to: 'method_check', actorId: '' }),
+    ).toThrow(/requires an actor/)
+  })
+
+  it('accepts a single step back with an actor', () => {
+    expect(() =>
+      assertValidStepBack({
+        projectId: 'p1',
+        from: 'draft',
+        to: 'method_check',
+        actorId: 'user-1',
+      }),
+    ).not.toThrow()
+  })
+
+  it('leaves the forward path unchanged, so a back move cannot pass as a forward one', () => {
+    // Stepping back is deliberately not in allowedNext. A caller reading the
+    // forward path should never see a backward move in it.
+    expect(canTransition('draft', 'method_check')).toBe(false)
+    expect(canTransition('complete', 'gap_analysis')).toBe(false)
   })
 })
 

@@ -29,12 +29,14 @@ export function AppShell({
       <div aria-hidden className="h-1 bg-forest" />
       <header className="border-b border-line bg-white">
         <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-4">
-          <div>
-            <p className="text-sm font-semibold text-forest">
+          {/* The wordmark goes home. It is the first thing people click when
+              they want out of a page, so it should not be inert text. */}
+          <a href="/dashboard" className="group">
+            <p className="text-sm font-semibold text-forest group-hover:underline group-hover:underline-offset-4">
               Research Ethics Board Assistant
             </p>
             <p className="text-xs text-muted">Phase 1, Work in Progress</p>
-          </div>
+          </a>
 
           <div className="flex items-center gap-4">
             <a

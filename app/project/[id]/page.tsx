@@ -15,7 +15,10 @@ import { assembleDraft } from '@/lib/draft/assemble'
 import { isAnthropicConfigured } from '@/lib/env'
 import { analyseGaps } from '@/lib/gaps/analyse'
 import { visibleSections } from '@/lib/intake/questions'
-import { STATE_DEFINITIONS } from '@/lib/workflow/states'
+import { displayTitle } from '@/lib/text'
+import { STATE_DEFINITIONS, canGoBack, previousState } from '@/lib/workflow/states'
+
+import { stepBack } from './actions'
 
 export const metadata = {
   title: 'Application | Research Ethics Board Assistant',
@@ -61,17 +64,32 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
           href="/dashboard"
           className="text-xs text-muted underline-offset-4 hover:underline"
         >
-          ← All applications
+          ← All Applications
         </Link>
         {/* The download lives in the step that offers it, not here as well.
             Two identical buttons on one screen read as two different actions. */}
-        <h1 className="mt-2 text-2xl font-semibold text-ink">{project.title}</h1>
+        <h1 className="mt-2 text-2xl font-semibold text-ink">{displayTitle(project.title)}</h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
           {definition.description}
         </p>
       </div>
 
       <WorkflowProgress current={project.state} />
+
+      {/* One consistent place on every step, rather than a different affordance
+          per screen. Hidden during the reuse decision, which has to be answered
+          before the application has a step to return to. */}
+      {canGoBack(project.state) && !needsReuseDecision ? (
+        <form action={stepBack}>
+          <input type="hidden" name="projectId" value={project.id} />
+          <button
+            type="submit"
+            className="text-xs text-muted underline-offset-4 hover:text-ink hover:underline"
+          >
+            ← Back to {STATE_DEFINITIONS[previousState(project.state)!].label}
+          </button>
+        </form>
+      ) : null}
 
       {store.isEphemeral ? (
         <p className="rounded-md border border-olive/60 bg-lime-soft/40 px-4 py-3 text-xs leading-relaxed text-ink">

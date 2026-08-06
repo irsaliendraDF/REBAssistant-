@@ -113,6 +113,45 @@ export function stateIndex(state: ProjectState): number {
 }
 
 /**
+ * Stepping back.
+ *
+ * `allowedNext` describes the forward path, plus the one backward move that a
+ * rejected method check forces. Going back voluntarily is a different thing and
+ * is kept separate on purpose, so that a backward move can never be mistaken for
+ * a forward one by a caller reading `allowedNext`.
+ *
+ * Guardrail 3 is about the app never advancing on its own. It has nothing to say
+ * against a researcher returning to a step to change an answer, and a workflow
+ * that only moves forward is one people work around by starting again. Answers
+ * are kept: going back re-opens a step, it does not clear it.
+ */
+export function previousState(state: ProjectState): ProjectState | null {
+  const index = stateIndex(state)
+  return index > 0 ? PROJECT_STATES[index - 1] : null
+}
+
+export function canGoBack(state: ProjectState): boolean {
+  return previousState(state) !== null
+}
+
+export function assertValidStepBack(request: TransitionRequest): void {
+  const expected = previousState(request.from)
+
+  if (expected === null) {
+    throw new Error(`There is no step before ${request.from}.`)
+  }
+  if (request.to !== expected) {
+    throw new Error(
+      `A step back from ${request.from} goes to ${expected}, not to ${request.to}. ` +
+        'Stepping back moves one step at a time.',
+    )
+  }
+  if (!request.actorId) {
+    throw new Error('A workflow transition requires an actor.')
+  }
+}
+
+/**
  * How far along the track to fill, as a percentage.
  *
  * The fill reaches a step's marker when the project has entered that step, not

@@ -19,7 +19,7 @@ import {
   filledFields,
   reuseDisclosure,
 } from '@/lib/profile/tombstone'
-import { assertValidTransition } from '@/lib/workflow/states'
+import { assertValidStepBack, assertValidTransition, previousState } from '@/lib/workflow/states'
 import type { AnswerMap } from '@/lib/data/types'
 
 /**
@@ -321,6 +321,54 @@ export async function respondToReuse(formData: FormData) {
       : null,
     consentVersion: TOMBSTONE_CONSENT_VERSION,
   })
+
+  redirect(`/project/${projectId}`)
+}
+
+/**
+ * Goes back one step, at the researcher's request.
+ *
+ * Answers are kept. Going back re-opens a step rather than clearing it, because
+ * the reason people go back is almost always to change one answer, and a
+ * workflow that punishes that is one they work around by starting again.
+ *
+ * Returning to intake clears the method check readings, for the same reason a
+ * rejection does: they describe answers that are about to change, and a stale
+ * reading confirmed by accident is worse than no reading.
+ */
+export async function stepBack(formData: FormData) {
+  const session = await getSession()
+  if (!session) redirect('/sign-in')
+
+  const projectId = String(formData.get('projectId') ?? '')
+
+  const store = getStore()
+  const project = await store.getProject(projectId, session.userId)
+  if (!project) redirect('/dashboard')
+
+  const target = previousState(project.state)
+  if (!target) redirect(`/project/${projectId}`)
+
+  assertValidStepBack({
+    projectId,
+    from: project.state,
+    to: target,
+    actorId: session.userId,
+    reason: 'Researcher stepped back',
+  })
+
+  if (target === 'intake') {
+    await store.replaceInterpretations(projectId, [])
+  }
+
+  await store.recordTransition({
+    projectId,
+    from: project.state,
+    to: target,
+    actorId: session.userId,
+    reason: 'Researcher stepped back',
+  })
+  await store.updateProject(projectId, session.userId, { state: target })
 
   redirect(`/project/${projectId}`)
 }

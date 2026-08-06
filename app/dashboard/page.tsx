@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { WorkflowProgress } from '@/components/workflow-progress'
 import { getSession } from '@/lib/auth/session'
 import { getStore } from '@/lib/data'
+import { displayTitle } from '@/lib/text'
 import { STATE_DEFINITIONS } from '@/lib/workflow/states'
 
 import { createProject } from './actions'
@@ -64,7 +65,7 @@ export default async function DashboardPage() {
                 className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-white px-5 py-4 transition hover:border-faint"
               >
                 <div>
-                  <p className="text-sm font-medium text-ink">{project.title}</p>
+                  <p className="text-sm font-medium text-ink">{displayTitle(project.title)}</p>
                   <p className="mt-0.5 text-xs text-muted">
                     {STATE_DEFINITIONS[project.state].label}
                     {project.involvesIndigenousResearch ||

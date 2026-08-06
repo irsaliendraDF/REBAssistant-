@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 import { AppShell } from '@/components/app-shell'
@@ -25,7 +26,13 @@ export default async function ProfilePage(props: PageProps<'/profile'>) {
     <AppShell session={session} profileName={profile?.fullName}>
       <div className="max-w-2xl space-y-8">
         <div>
-          <h1 className="text-2xl font-semibold text-ink">Your Details</h1>
+          <Link
+            href="/dashboard"
+            className="text-xs text-muted underline-offset-4 hover:text-ink hover:underline"
+          >
+            ← All Applications
+          </Link>
+          <h1 className="mt-2 text-2xl font-semibold text-ink">Your Details</h1>
           <p className="mt-2 text-sm leading-relaxed text-muted">
             Entered once, and offered on every new application so you are not retyping them. You
             are asked before they are carried into a new application, and you can change them here
