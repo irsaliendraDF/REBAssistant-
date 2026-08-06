@@ -1,6 +1,6 @@
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
+import { BackLink } from '@/components/back-link'
 import { DraftStep } from '@/components/draft-step'
 import { GapAnalysisStep } from '@/components/gap-analysis-step'
 import { IntakeStep } from '@/components/intake-step'
@@ -60,15 +60,10 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
   return (
     <div className="space-y-8">
       <div>
-        <Link
-          href="/dashboard"
-          className="text-xs text-muted underline-offset-4 hover:underline"
-        >
-          ← All Applications
-        </Link>
+        <BackLink />
         {/* The download lives in the step that offers it, not here as well.
             Two identical buttons on one screen read as two different actions. */}
-        <h1 className="mt-2 text-2xl font-semibold text-ink">{displayTitle(project.title)}</h1>
+        <h1 className="mt-4 text-2xl font-semibold text-ink">{displayTitle(project.title)}</h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
           {definition.description}
         </p>
@@ -84,7 +79,7 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
           <input type="hidden" name="projectId" value={project.id} />
           <button
             type="submit"
-            className="text-xs text-muted underline-offset-4 hover:text-ink hover:underline"
+            className="text-sm font-medium text-forest underline-offset-4 hover:underline"
           >
             ← Back to {STATE_DEFINITIONS[previousState(project.state)!].label}
           </button>
