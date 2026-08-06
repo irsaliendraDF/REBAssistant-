@@ -55,7 +55,7 @@ export function DraftStep({
           href={`/project/${projectId}/export`}
           className="rounded-md border border-line bg-white px-4 py-2.5 text-sm font-medium text-muted transition hover:bg-surface-2"
         >
-          Download draft (.docx)
+          Download Draft (.docx)
         </a>
 
         <form action={advanceWorkflow}>
@@ -65,7 +65,7 @@ export function DraftStep({
             type="submit"
             className="rounded-md bg-forest px-4 py-2.5 text-sm font-medium text-white transition hover:bg-forest-dark"
           >
-            Continue to gap analysis
+            Continue to Gap Analysis
           </button>
         </form>
       </div>

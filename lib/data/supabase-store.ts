@@ -57,6 +57,9 @@ interface ProfileRow {
   core_certificate_status: string | null
   core_certificate_date: string | null
   phone: string | null
+  banner_number: string | null
+  romeo_registered: boolean | null
+  affiliation: string | null
   updated_at: string
 }
 
@@ -115,6 +118,9 @@ export const supabaseStore: DataStore = {
       coreCertificateStatus: row.core_certificate_status,
       coreCertificateDate: row.core_certificate_date,
       phone: row.phone,
+      bannerNumber: row.banner_number,
+      romeoRegistered: row.romeo_registered ?? false,
+      affiliation: row.affiliation,
       updatedAt: row.updated_at,
     }
   },
@@ -136,6 +142,11 @@ export const supabaseStore: DataStore = {
           ? { core_certificate_date: input.coreCertificateDate }
           : {}),
         ...(input.phone !== undefined ? { phone: input.phone } : {}),
+        ...(input.bannerNumber !== undefined ? { banner_number: input.bannerNumber } : {}),
+        ...(input.romeoRegistered !== undefined
+          ? { romeo_registered: input.romeoRegistered }
+          : {}),
+        ...(input.affiliation !== undefined ? { affiliation: input.affiliation } : {}),
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'id' },

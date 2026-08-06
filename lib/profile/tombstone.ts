@@ -32,13 +32,25 @@ export interface TombstoneField {
 export const TOMBSTONE_FIELDS: TombstoneField[] = [
   { key: 'fullName', label: 'Full name', type: 'text' },
   {
+    key: 'affiliation',
+    label: 'Your affiliation with Dalhousie',
+    help: 'Section 1.1 of the form asks for this. For example Faculty, PhD Student, Master’s Student, Postdoctoral Fellow, or Staff.',
+    type: 'text',
+  },
+  {
     key: 'role',
     label: 'Role on research projects',
-    help: 'For example Principal Investigator, Co-Investigator, or Student Investigator.',
+    help: 'For example Lead Researcher, Co-Investigator, or Contact Person.',
     type: 'text',
   },
   { key: 'department', label: 'Department or faculty', type: 'text' },
   { key: 'institution', label: 'Institution', type: 'text' },
+  {
+    key: 'bannerNumber',
+    label: 'Banner number',
+    help: 'Required in section 1.1. The Board will not accept a submission without it.',
+    type: 'text',
+  },
   {
     key: 'coreCertificateStatus',
     label: 'TCPS 2: CORE tutorial',

@@ -30,7 +30,7 @@ export function TombstoneReuseStep({
     <div className="space-y-6">
       <div className="rounded-lg border border-line bg-white p-6">
         <h2 className="text-lg font-semibold text-ink">
-          Carry your saved details into this application?
+          Carry Your Saved Details Into This Application?
         </h2>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
           You entered these before. They can be filled in for you so you are not retyping them.
@@ -63,7 +63,7 @@ export function TombstoneReuseStep({
               type="submit"
               className="rounded-md bg-forest px-4 py-2.5 text-sm font-medium text-white transition hover:bg-forest-dark"
             >
-              Yes, use these details
+              Yes, Use These Details
             </button>
           </form>
 
@@ -74,7 +74,7 @@ export function TombstoneReuseStep({
               type="submit"
               className="rounded-md border border-line px-4 py-2.5 text-sm font-medium text-muted transition hover:bg-surface-2"
             >
-              No, start this one blank
+              No, Start This One Blank
             </button>
           </form>
         </div>

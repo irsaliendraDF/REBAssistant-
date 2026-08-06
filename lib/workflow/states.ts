@@ -35,7 +35,7 @@ export interface StateDefinition {
 export const STATE_DEFINITIONS: Record<ProjectState, StateDefinition> = {
   triage: {
     state: 'triage',
-    label: 'Triage',
+    label: 'Getting Started',
     description:
       'A few opening questions about the shape of the research, including whether it involves Indigenous or community-engaged research.',
     allowedNext: ['intake'],
@@ -49,7 +49,7 @@ export const STATE_DEFINITIONS: Record<ProjectState, StateDefinition> = {
   },
   method_check: {
     state: 'method_check',
-    label: 'Method check',
+    label: 'Method Check',
     description:
       'Research Ethics Board Assistant states how it has understood your methodology. You confirm it, correct it, or reject it. Rejecting sends the project back to intake.',
     // Rejection goes backwards. This is the only state with a backward move.
@@ -64,14 +64,14 @@ export const STATE_DEFINITIONS: Record<ProjectState, StateDefinition> = {
   },
   gap_analysis: {
     state: 'gap_analysis',
-    label: 'Gap analysis',
+    label: 'Gap Analysis',
     description:
       'What looks missing or thin, with the relevant TCPS2 guidance. These are observations for you to consider, not decisions.',
     allowedNext: ['complete'],
   },
   complete: {
     state: 'complete',
-    label: 'Ready to review',
+    label: 'Ready to Review',
     description:
       'Your draft package is ready to download, review and submit yourself. Research Ethics Board Assistant does not submit it, and does not decide whether it will be approved.',
     allowedNext: [],

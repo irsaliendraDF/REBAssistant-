@@ -20,6 +20,9 @@ function profile(overrides: Partial<Profile> = {}): Profile {
     coreCertificateStatus: null,
     coreCertificateDate: null,
     phone: null,
+    bannerNumber: null,
+    romeoRegistered: false,
+    affiliation: null,
     updatedAt: '2026-08-05T12:00:00.000Z',
     ...overrides,
   }

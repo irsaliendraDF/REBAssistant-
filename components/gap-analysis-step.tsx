@@ -37,7 +37,7 @@ export function GapAnalysisStep({
 
       {findings.length === 0 ? (
         <div className="rounded-lg border border-dashed border-line bg-white p-10 text-center">
-          <p className="text-sm font-medium text-ink">Nothing flagged</p>
+          <p className="text-sm font-medium text-ink">Nothing Flagged</p>
           <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">
             These checks did not find anything to raise. That is not the same as the application
             being complete or approvable, which is the Board’s judgement, not this tool’s.
@@ -87,7 +87,7 @@ export function GapAnalysisStep({
           type="submit"
           className="rounded-md bg-forest px-4 py-2.5 text-sm font-medium text-white transition hover:bg-forest-dark"
         >
-          Mark as ready to review
+          Mark as Ready to Review
         </button>
         <p className="mt-2 max-w-2xl text-xs leading-relaxed text-muted">
           You can continue with findings outstanding. These are observations for you to weigh, not

@@ -33,26 +33,34 @@ const COMPLETE: AnswerMap = {
   'intake.2_3.who':
     'Homeowners in rural Nova Scotia who have considered a heat pump installation in the last two years, recruited across three municipalities of differing size.',
   'intake.2_3.dependence': 'no',
+  'intake.2_4.third_party': 'no',
   'intake.2_4.how':
     'Posters in community centres, a notice in each municipal newsletter, and an invitation shared by two local energy co-operatives to their mailing lists.',
   'intake.2_5.how': 'written',
+  'intake.2_5.future_use': 'no',
   'intake.2_5.withdrawal':
     'Participants may stop at any time and may ask for their transcript to be removed up until results are aggregated, three months after their interview.',
   'intake.2_6.what_happens':
     'One semi-structured interview of about forty five minutes, held in the participant home or by video call, followed by an optional short follow-up email.',
   'intake.2_6.recording': 'no',
+  'intake.2_6.analysis':
+    'Thematic analysis of interview transcripts, coded by two researchers independently and reconciled, addressing the primary research question directly.',
   'intake.2_6.intervention': 'no',
   'intake.2_7.identifiability': 'coded',
   'intake.2_7.storage':
     'On an encrypted university drive that only the named research team can reach, with the linking key held separately by the principal investigator.',
   'intake.2_7.outside_canada': 'no',
   'intake.2_7.health_information': 'no',
-  'intake.2_8.how_long':
+  'intake.2_7.retention':
     'Five years following publication, after which recordings, transcripts and the linking key are deleted and deletion is confirmed in writing.',
   'intake.2_9.risks':
     'Some discomfort may arise when discussing household finances with a stranger, and a small risk of identification in a small community.',
   'intake.2_9.mitigation':
     'Participants are told in advance that any question can be skipped, and identifying details of place are generalised in all reporting.',
+  'intake.2_9.others':
+    'The participating municipalities could be identifiable in reporting, so their names are generalised unless each one agrees otherwise in writing.',
+  'intake.2_10.participants':
+    'A plain language summary is emailed to every participant who asks for one, about a month after the findings are settled.',
   'intake.2_10.where':
     'A public report for each participating municipality, a peer reviewed conference paper, and a plain language summary sent to participants.',
 }

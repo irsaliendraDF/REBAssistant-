@@ -50,6 +50,11 @@ export interface Profile {
   coreCertificateStatus: string | null
   coreCertificateDate: string | null
   phone: string | null
+  /** Required by form section 1.1. */
+  bannerNumber: string | null
+  /** The form is not accepted without this attestation. */
+  romeoRegistered: boolean
+  affiliation: string | null
   updatedAt: string
 }
 

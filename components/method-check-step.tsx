@@ -12,7 +12,7 @@ import { allResolved, hasRejection } from '@/lib/method/interpret'
  * Three deliberate choices in this screen. Confirm is not the default and
  * nothing is preselected, because a preselected confirm is a rubber stamp with
  * extra steps. Altering or rejecting requires writing what is wrong, which the
- * database enforces too. And "Continue to drafting" stays disabled until every
+ * database enforces too. And "Continue to Drafting" stays disabled until every
  * reading has an answer, so the gate cannot be walked past.
  */
 export function MethodCheckStep({
@@ -33,7 +33,7 @@ export function MethodCheckStep({
   if (interpretations.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-line bg-white p-10 text-center">
-        <p className="text-sm font-medium text-ink">Nothing to check yet</p>
+        <p className="text-sm font-medium text-ink">Nothing to Check Yet</p>
         <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">
           There are no methodology answers to read back to you. Go back to intake and complete the
           study population, recruitment, consent and methods sections.
@@ -109,7 +109,7 @@ export function MethodCheckStep({
                 htmlFor={`correction-${item.id}`}
                 className="block text-sm font-medium text-ink"
               >
-                What have we got wrong?
+                What Have We Got Wrong?
               </label>
               <p className="mt-1 text-xs text-muted">
                 Needed if you are correcting or rejecting this reading. Leave blank to confirm it.
@@ -138,7 +138,7 @@ export function MethodCheckStep({
                 value="confirm"
                 className="rounded-md bg-forest px-4 py-2 text-sm font-medium text-white transition hover:bg-forest-dark"
               >
-                This is right
+                This Is Right
               </button>
               <button
                 type="submit"
@@ -146,7 +146,7 @@ export function MethodCheckStep({
                 value="alter"
                 className="rounded-md border border-line px-4 py-2 text-sm font-medium text-muted transition hover:bg-surface-2"
               >
-                Mostly right, with a correction
+                Mostly Right, With a Correction
               </button>
               <button
                 type="submit"
@@ -154,7 +154,7 @@ export function MethodCheckStep({
                 value="reject"
                 className="rounded-md border border-alert/40 px-4 py-2 text-sm font-medium text-alert transition hover:bg-alert-soft"
               >
-                This is wrong, take me back
+                This Is Wrong, Take Me Back
               </button>
             </div>
           </form>
@@ -168,7 +168,7 @@ export function MethodCheckStep({
           disabled={!resolved || rejected}
           className="rounded-md bg-forest px-4 py-2.5 text-sm font-medium text-white transition hover:bg-forest-dark disabled:cursor-not-allowed disabled:bg-line"
         >
-          Continue to drafting
+          Continue to Drafting
         </button>
         <p className="mt-2 text-xs text-muted">
           {resolved && !rejected

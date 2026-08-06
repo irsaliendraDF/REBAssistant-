@@ -41,7 +41,7 @@ export function TriageStep({
           value="advance"
           className="rounded-md bg-forest px-4 py-2.5 text-sm font-medium text-white transition hover:bg-forest-dark"
         >
-          Save and continue to intake
+          Save and Continue to Intake
         </button>
         <button
           type="submit"
@@ -49,7 +49,7 @@ export function TriageStep({
           value="save"
           className="rounded-md border border-line px-4 py-2.5 text-sm font-medium text-muted transition hover:bg-surface-2"
         >
-          Save and come back later
+          Save and Come Back Later
         </button>
       </div>
     </form>

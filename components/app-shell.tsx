@@ -10,7 +10,18 @@ import type { Session } from '@/lib/auth/session'
  * file that owns the route, rather than being buried in a shared component that
  * a new route could forget to use.
  */
-export function AppShell({ session, children }: { session: Session; children: ReactNode }) {
+export function AppShell({
+  session,
+  profileName,
+  children,
+}: {
+  session: Session
+  /** From the saved profile. Preferred over the sign-in address once set. */
+  profileName?: string | null
+  children: ReactNode
+}) {
+  const name = profileName?.trim() || session.displayName
+
   return (
     <div className="min-h-dvh bg-surface">
       {/* A single brand rule across the top. The rest of the interface stays
@@ -22,16 +33,19 @@ export function AppShell({ session, children }: { session: Session; children: Re
             <p className="text-sm font-semibold text-forest">
               Research Ethics Board Assistant
             </p>
-            <p className="text-xs text-muted">Phase 1, work in progress</p>
+            <p className="text-xs text-muted">Phase 1, Work in Progress</p>
           </div>
+
           <div className="flex items-center gap-4">
             <a
               href="/profile"
-              className="text-xs text-muted underline-offset-4 hover:text-ink hover:underline"
+              title="Your details"
+              className="flex items-center gap-2 rounded-md px-2 py-1 text-xs text-muted transition hover:bg-surface-2 hover:text-ink"
             >
-              Your details
+              <PersonIcon />
+              <span>{name}</span>
             </a>
-            <span className="text-xs text-muted">{session.displayName}</span>
+
             {/* Nothing to sign out of in review mode, so no button to offer. */}
             {session.isReview ? null : (
               <form action={signOut}>
@@ -39,7 +53,7 @@ export function AppShell({ session, children }: { session: Session; children: Re
                   type="submit"
                   className="rounded-md border border-line px-3 py-1.5 text-xs font-medium text-muted transition hover:bg-surface-2"
                 >
-                  Sign out
+                  Sign Out
                 </button>
               </form>
             )}
@@ -65,5 +79,23 @@ export function AppShell({ session, children }: { session: Session; children: Re
 
       <main className="mx-auto w-full max-w-5xl px-6 py-10">{children}</main>
     </div>
+  )
+}
+
+function PersonIcon() {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      className="h-4 w-4 shrink-0"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <circle cx="10" cy="6.5" r="3.25" />
+      <path d="M3.75 16.5a6.25 6.25 0 0 1 12.5 0" />
+    </svg>
   )
 }

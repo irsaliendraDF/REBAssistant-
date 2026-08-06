@@ -69,9 +69,19 @@ export function IntakeStep({
                   </span>
                   <span className="flex-1">{section.title}</span>
                   {done && !isCurrent ? (
-                    <span className="text-faint" aria-label="complete">
-                      ✓
-                    </span>
+                    <svg
+                      viewBox="0 0 16 16"
+                      className="mt-0.5 h-3.5 w-3.5 shrink-0 text-forest"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      role="img"
+                      aria-label="Complete"
+                    >
+                      <path d="M3 8.5 6.5 12 13 4.5" />
+                    </svg>
                   ) : null}
                 </Link>
               </li>
@@ -110,7 +120,7 @@ export function IntakeStep({
             value="advance"
             className="rounded-md bg-forest px-4 py-2.5 text-sm font-medium text-white transition hover:bg-forest-dark"
           >
-            {isLast ? 'Save and continue to method check' : 'Save and next section'}
+            {isLast ? 'Save and Continue to Method Check' : 'Save and Next Section'}
           </button>
           <button
             type="submit"

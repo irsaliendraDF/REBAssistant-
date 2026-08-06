@@ -63,26 +63,12 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
         >
           ← All applications
         </Link>
-        <div className="mt-2 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-ink">{project.title}</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-              {definition.description}
-            </p>
-          </div>
-
-          {/* Available from intake onwards. A partial document that shows the
-              real structure is the fastest way to find out whether the structure
-              is right. */}
-          {project.state !== 'triage' ? (
-            <a
-              href={`/project/${project.id}/export`}
-              className="shrink-0 rounded-md border border-line bg-white px-4 py-2.5 text-sm font-medium text-muted transition hover:bg-surface-2"
-            >
-              Download draft (.docx)
-            </a>
-          ) : null}
-        </div>
+        {/* The download lives in the step that offers it, not here as well.
+            Two identical buttons on one screen read as two different actions. */}
+        <h1 className="mt-2 text-2xl font-semibold text-ink">{project.title}</h1>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+          {definition.description}
+        </p>
       </div>
 
       <WorkflowProgress current={project.state} />
@@ -119,7 +105,7 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
 
       {project.routingNote ? (
         <div className="rounded-lg border border-line bg-surface p-4">
-          <p className="text-sm font-medium text-ink">Some sections go to a person, not the tool</p>
+          <p className="text-sm font-medium text-ink">Some Sections Go to a Person, Not the Tool</p>
           <p className="mt-1 text-sm leading-relaxed text-muted">{project.routingNote}</p>
         </div>
       ) : null}
@@ -157,7 +143,7 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
         />
       ) : (
         <div className="rounded-lg border border-line bg-white p-10 text-center">
-          <p className="text-sm font-medium text-ink">Ready for you to review</p>
+          <p className="text-sm font-medium text-ink">Ready for You to Review</p>
           <p className="mx-auto mt-2 max-w-lg text-sm leading-relaxed text-muted">
             Download the document, check it, complete anything the tool left to you, and submit it
             yourself. Research Ethics Board Assistant does not submit applications and does not
@@ -167,7 +153,7 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
             href={`/project/${project.id}/export`}
             className="mt-6 inline-block rounded-md bg-forest px-4 py-2.5 text-sm font-medium text-white transition hover:bg-forest-dark"
           >
-            Download draft (.docx)
+            Download Draft (.docx)
           </a>
         </div>
       )}

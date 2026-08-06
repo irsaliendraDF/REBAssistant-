@@ -20,7 +20,7 @@ export default async function DashboardPage() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-ink">Your applications</h1>
+          <h1 className="text-2xl font-semibold text-ink">Your Applications</h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
             Each application moves through a fixed sequence. You advance it yourself at every step,
             and nothing moves forward on its own.
@@ -32,7 +32,7 @@ export default async function DashboardPage() {
             type="submit"
             className="rounded-md bg-forest px-4 py-2.5 text-sm font-medium text-white transition hover:bg-forest-dark"
           >
-            Start a new application
+            Start a New Application
           </button>
         </form>
       </div>
@@ -49,7 +49,7 @@ export default async function DashboardPage() {
 
       {projects.length === 0 ? (
         <div className="rounded-lg border border-dashed border-line bg-white p-10 text-center">
-          <p className="text-sm font-medium text-ink">No applications yet</p>
+          <p className="text-sm font-medium text-ink">No Applications Yet</p>
           <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">
             Starting one opens a few questions about the shape of your research. It takes a couple
             of minutes, and you can leave and come back at any point.

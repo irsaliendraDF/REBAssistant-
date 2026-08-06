@@ -53,7 +53,7 @@ export default async function SignInPage(props: PageProps<'/sign-in'>) {
 
       {sentTo ? (
         <div className="rounded-lg border border-line bg-surface p-5">
-          <p className="text-sm font-medium text-ink">Check your email</p>
+          <p className="text-sm font-medium text-ink">Check Your Email</p>
           <p className="mt-2 text-sm leading-relaxed text-muted">
             A sign-in link is on its way to <span className="font-medium">{sentTo}</span>. It is
             good for one use. If it does not arrive within a couple of minutes, check your junk
@@ -68,7 +68,7 @@ export default async function SignInPage(props: PageProps<'/sign-in'>) {
         </div>
       ) : signInUnavailable ? (
         <div className="rounded-lg border border-line bg-surface p-4 text-sm text-muted">
-          <p className="font-medium text-ink">Sign-in is not available yet</p>
+          <p className="font-medium text-ink">Sign-In Is Not Available Yet</p>
           <p className="mt-1 leading-relaxed">
             This is an early build. Accounts are created once the database is connected.
           </p>
@@ -113,7 +113,7 @@ export default async function SignInPage(props: PageProps<'/sign-in'>) {
               type="submit"
               className="w-full rounded-md bg-forest px-4 py-2.5 text-sm font-medium text-white transition hover:bg-forest-dark"
             >
-              {usePlaceholder ? 'Continue' : 'Email me a sign-in link'}
+              {usePlaceholder ? 'Continue' : 'Email Me a Sign-In Link'}
             </button>
           </form>
         </>

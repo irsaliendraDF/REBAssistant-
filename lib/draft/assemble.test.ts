@@ -108,7 +108,10 @@ describe('guardrail 4: routing', () => {
     const indigenous = draft.sections.find((section) => section.number === '2.13')!
     expect(indigenous.status).toBe('routed')
     expect(indigenous.content).toBe('')
-    expect(indigenous.note).toMatch(/TCPS2 Chapter 9/)
+    // The form cites Articles 9.1 and 9.2 specifically, and also asks about
+    // Mi'kmaw Ethics Watch and OCAP. The note names all three.
+    expect(indigenous.note).toMatch(/TCPS 2 Articles 9\.1 and 9\.2/)
+    expect(indigenous.note).toMatch(/Mi’kmaw Ethics Watch/)
   })
 
   it('marks the affected sections as not drafted when triage flagged the project', () => {

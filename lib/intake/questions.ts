@@ -83,8 +83,22 @@ export const TRIAGE_QUESTIONS: Question[] = [
     formSection: '2.1',
   },
   {
+    key: 'triage.board',
+    label: 'Which Research Ethics Board should review this research?',
+    help: 'Section 1 of the form asks you to suggest one. Health Sciences covers clinical and health research; Social Sciences and Humanities covers most other work.',
+    type: 'choice',
+    required: true,
+    formSection: '1',
+    options: [
+      { value: 'health', label: 'Health Sciences' },
+      { value: 'social', label: 'Social Sciences and Humanities' },
+      { value: 'unsure', label: 'I am not sure' },
+    ],
+  },
+  {
     key: 'triage.data_source',
     label: 'Will you collect information directly from people, or work only with records that already exist?',
+    help: 'This form is for prospective research, where new data is collected. Research using only existing records uses a different form.',
     type: 'choice',
     required: true,
     options: [
@@ -138,6 +152,8 @@ export function triageFlags(answers: AnswerMap): {
 
 const INVOLVES_INTERVENTION_KEY = 'intake.2_6.intervention'
 const HANDLES_HEALTH_INFORMATION_KEY = 'intake.2_7.health_information'
+/** Drives section 2.8, which most studies mark not applicable. */
+const FUTURE_USE_KEY = 'intake.2_5.future_use'
 
 export const INTAKE_SECTIONS: IntakeSection[] = [
   {
@@ -197,11 +213,28 @@ export const INTAKE_SECTIONS: IntakeSection[] = [
     title: 'Recruitment',
     questions: [
       {
+        key: 'intake.2_4.third_party',
+        label:
+          'Will you need the cooperation, assistance or approval of anyone outside the research team to reach participants?',
+        help: 'For example a school, a clinic, an employer or a community organisation. If yes, the Board needs their written agreement appended before it will review your submission, so this is worth starting early.',
+        type: 'choice',
+        required: true,
+        options: YES_NO_UNSURE,
+        formSection: '2.4',
+      },
+      {
         key: 'intake.2_4.how',
         label: 'How will you find and approach people?',
         help: 'Include where the invitation appears and who does the approaching.',
         type: 'textarea',
         required: true,
+        formSection: '2.4',
+      },
+      {
+        key: 'intake.2_4.screening',
+        label: 'How will you check that someone is eligible to take part?',
+        help: 'If people decide for themselves, say so.',
+        type: 'textarea',
         formSection: '2.4',
       },
       {
@@ -215,7 +248,7 @@ export const INTAKE_SECTIONS: IntakeSection[] = [
   },
   {
     formSection: '2.5',
-    title: 'Consent process',
+    title: 'Informed consent process',
     questions: [
       {
         key: 'intake.2_5.how',
@@ -238,11 +271,20 @@ export const INTAKE_SECTIONS: IntakeSection[] = [
         required: true,
         formSection: '2.5',
       },
+      {
+        key: FUTURE_USE_KEY,
+        label: 'Might the data be kept for use in future research beyond this study?',
+        help: 'If so, TCPS 2 Article 3.13 requires participants to consent to that separately, and they must still be able to take part if they say no.',
+        type: 'choice',
+        required: true,
+        options: YES_NO_UNSURE,
+        formSection: '2.5',
+      },
     ],
   },
   {
     formSection: '2.6',
-    title: 'Methods and procedures',
+    title: 'Methods, data collection and analysis',
     questions: [
       {
         key: 'intake.2_6.what_happens',
@@ -259,6 +301,14 @@ export const INTAKE_SECTIONS: IntakeSection[] = [
         type: 'choice',
         required: true,
         options: YES_NO_UNSURE,
+        formSection: '2.6',
+      },
+      {
+        key: 'intake.2_6.analysis',
+        label: 'Briefly, how will you analyse the data?',
+        help: 'The form asks how the analysis addresses your research question, and asks you to justify using any demographic information you collect.',
+        type: 'textarea',
+        required: true,
         formSection: '2.6',
       },
       {
@@ -305,8 +355,24 @@ export const INTAKE_SECTIONS: IntakeSection[] = [
         formSection: '2.7',
       },
       {
+        key: 'intake.2_7.retention',
+        label: 'How long will you keep everything, and how will it eventually be destroyed?',
+        help: 'Section 2.7.2 asks for a retention period with a rationale, where things live in the meantime, and who destroys them.',
+        type: 'textarea',
+        required: true,
+        formSection: '2.7',
+      },
+      {
+        key: 'intake.2_7.limits',
+        label: 'Are there any limits on the confidentiality you can offer?',
+        help: 'For example a legal duty to report abuse or neglect of a child, or of an adult in need of protection. These must also appear in the consent form.',
+        type: 'textarea',
+        formSection: '2.7',
+      },
+      {
         key: HANDLES_HEALTH_INFORMATION_KEY,
         label: 'Will you handle personal health information?',
+        help: 'This may bring the research under Nova Scotia’s Personal Health Information Act.',
         type: 'choice',
         required: true,
         options: YES_NO_UNSURE,
@@ -316,20 +382,37 @@ export const INTAKE_SECTIONS: IntakeSection[] = [
   },
   {
     formSection: '2.8',
-    title: 'Retention and disposal',
+    title: 'Indefinite retention of research data',
+    intro:
+      'Shown because you indicated the data may be kept for future research. Most studies mark this section not applicable.',
+    showWhen: (answers) => answers[FUTURE_USE_KEY] === 'yes',
     questions: [
       {
-        key: 'intake.2_8.how_long',
-        label: 'How long will you keep the information, and what happens to it afterwards?',
+        key: 'intake.2_8.risks_benefits',
+        label: 'What are the risks and benefits of keeping this data long term for unspecified future research?',
         type: 'textarea',
         required: true,
+        formSection: '2.8',
+      },
+      {
+        key: 'intake.2_8.keeper',
+        label: 'Who will hold the data, and what happens to it if they leave Dalhousie?',
+        help: 'Retirement, moving institution, or graduation all count. If it sits in a repository rather than with a person, say so.',
+        type: 'textarea',
+        required: true,
+        formSection: '2.8',
+      },
+      {
+        key: 'intake.2_8.access',
+        label: 'Who will be able to access it in future, and under what circumstances?',
+        type: 'textarea',
         formSection: '2.8',
       },
     ],
   },
   {
     formSection: '2.9',
-    title: 'Risk and benefit',
+    title: 'Risk and benefit analysis',
     questions: [
       {
         key: 'intake.2_9.risks',
@@ -347,6 +430,15 @@ export const INTAKE_SECTIONS: IntakeSection[] = [
         formSection: '2.9',
       },
       {
+        key: 'intake.2_9.others',
+        label:
+          'Could anyone beyond your participants be affected by this research, or by publishing the findings?',
+        help: 'The form asks about people, groups or communities who are not participants themselves. Answering this is also where the form asks whether Indigenous communities are involved.',
+        type: 'textarea',
+        required: true,
+        formSection: '2.9',
+      },
+      {
         key: 'intake.2_9.benefits',
         label: 'What are the benefits, to participants or more broadly?',
         type: 'textarea',
@@ -356,20 +448,30 @@ export const INTAKE_SECTIONS: IntakeSection[] = [
   },
   {
     formSection: '2.10',
-    title: 'Dissemination',
+    title: 'Provision of results and dissemination',
     questions: [
       {
-        key: 'intake.2_10.where',
-        label: 'Where will the results go?',
-        help: 'Publications, conferences, reports to a partner organisation, and so on.',
+        key: 'intake.2_10.participants',
+        label: 'How will you share the results with the people who took part?',
+        help: 'TCPS 2 encourages this. Describe the format and the process.',
         type: 'textarea',
         required: true,
         formSection: '2.10',
       },
       {
-        key: 'intake.2_10.participants',
-        label: 'Will participants be able to see the findings, and how?',
+        key: 'intake.2_10.individual',
+        label: 'Will anyone receive their own individual results?',
+        help: 'If so, the form asks how they are delivered securely, how you make sure they are understandable, and what risks come with receiving them.',
+        type: 'choice',
+        options: YES_NO_UNSURE,
+        formSection: '2.10',
+      },
+      {
+        key: 'intake.2_10.where',
+        label: 'Where else will the findings go?',
+        help: 'Publications, conferences, public lectures, reports to a partner organisation.',
         type: 'textarea',
+        required: true,
         formSection: '2.10',
       },
     ],
@@ -410,7 +512,7 @@ export const INTAKE_SECTIONS: IntakeSection[] = [
   },
   {
     formSection: '2.15',
-    title: 'Personal health information',
+    title: 'Use of personal health information',
     intro: 'Shown because you indicated the research handles personal health information.',
     showWhen: (answers) => answers[HANDLES_HEALTH_INFORMATION_KEY] === 'yes',
     questions: [
