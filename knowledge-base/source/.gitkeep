@@ -1,13 +1,47 @@
 # Source documents go in this folder. The folder is tracked; its contents are not.
 #
-# Expected here:
-#   application-human-ethics-prospective-research.docx   the form, and the spine of the build
-#   reb-application-guidelines-for-prospective-research.pdf
-#   consent-form-*.pdf                                   generation templates
-#   confidentiality-agreement-template.pdf
-#   hints-for-research-recruitment-messages.pdf
-#   TCPS2 material
-#   Test material (the Community Retrofit Readiness proposal, the Future Civics braindump)
+# They are client material and stay out of git deliberately. The list below is
+# the record of what belongs here, so an empty folder is not a mystery.
 #
-# Several files arrive as -2 duplicates. Drop them in as they are; ingestion
-# de-duplicates on content hash, not filename.
+# WHERE THEY COME FROM
+#
+#   Google Drive, "REB Document (Dalhousie University)", inside the project
+#   handover folder. Owned by shakara.innovates@gmail.com.
+#   https://drive.google.com/drive/folders/1YvlM62Ije015ZFtFE3AmDCR9VUtMP7l_
+#
+#   Download the whole folder from Drive and unzip it here. Keep the filenames
+#   exactly as they are: lib/kb/config.ts classifies documents by filename, and
+#   a renamed file is classified as 'other' and cited by its bare filename.
+#
+# WHAT IS IN IT (15 files, verified 2026-08-06)
+#
+#   The form, and the spine of the build
+#     application-human-ethics-prospective-research.docx
+#
+#   Guidance
+#     reb-application-guidelines-for-prospective-research.pdf
+#     hints-for-research-recruitment-messages.pdf            (+ -2 duplicate)
+#
+#   Templates
+#     consent-form-template-online-survey.pdf
+#     consent-form-prospective-research-data-collection.pdf
+#     consent-form-secondary-personal-records.pdf            (+ -2 duplicate)
+#     consent-form-secondary-research-existing-records.pdf   (+ -2 duplicate)
+#     consent-form-data-sharing-repository-future-research.pdf
+#     confidentiality-agreement-template.pdf                 (+ -2 duplicate)
+#
+#   Test material, not guidance. Never cite these to a researcher.
+#     Draft Research Proposal_ Community Retrofit Readiness and Derisking Framework.docx
+#     Future Civics - Braindump - REB CHAT.docx
+#
+# Four files arrive as -2 duplicates of a file already listed. Drop them in as
+# they are. De-duplication is on content hash, not filename, so they cost
+# nothing and removing them by hand risks removing the wrong copy.
+#
+# NOT HERE, AND NOT NEEDED HERE
+#
+#   TCPS 2. It is not in the Drive folder and does not need to be. It is a
+#   public document published chapter by chapter at ethics.gc.ca, and the
+#   knowledge base routes by form section to a named chapter rather than
+#   searching for similar passages, so the chapters are read from source at the
+#   point the mapping is built. See docs/decisions.md.
