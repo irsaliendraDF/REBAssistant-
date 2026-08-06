@@ -7,6 +7,8 @@ import type {
   ConsentRecord,
   CreateProjectInput,
   DataStore,
+  Draft,
+  NewDraft,
   Profile,
   ProfileInput,
   InterpretationResponse,
@@ -61,6 +63,40 @@ interface ProfileRow {
   romeo_registered: boolean | null
   affiliation: string | null
   updated_at: string
+}
+
+interface DraftRow {
+  id: string
+  project_id: string
+  form_section: string
+  section_title: string | null
+  content: string | null
+  version: number
+  is_current: boolean
+  ai_generated: boolean
+  model_version: string | null
+  edited_by_human: boolean
+  word_count: number | null
+  word_limit: number | null
+  created_at: string
+}
+
+function toDraft(row: DraftRow): Draft {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    formSection: row.form_section,
+    sectionTitle: row.section_title,
+    content: row.content ?? '',
+    version: row.version,
+    isCurrent: row.is_current,
+    aiGenerated: row.ai_generated,
+    modelVersion: row.model_version,
+    editedByHuman: row.edited_by_human,
+    wordCount: row.word_count,
+    wordLimit: row.word_limit,
+    createdAt: row.created_at,
+  }
 }
 
 interface InterpretationRow {
@@ -290,6 +326,75 @@ export const supabaseStore: DataStore = {
       .upsert(rows, { onConflict: 'project_id,question_key' })
 
     if (error) throw new Error(`Could not save your answers: ${error.message}`)
+  },
+
+  async listDrafts(projectId) {
+    const supabase = await requireClient()
+    const { data, error } = await supabase
+      .from('drafts')
+      .select('*')
+      .eq('project_id', projectId)
+      .eq('is_current', true)
+      .order('form_section', { ascending: true })
+
+    if (error) throw new Error(`Could not load your drafts: ${error.message}`)
+    return (data ?? []).map(toDraft)
+  },
+
+  async saveDraft(projectId, input: NewDraft) {
+    const supabase = await requireClient()
+
+    const { data: prior, error: priorError } = await supabase
+      .from('drafts')
+      .select('version')
+      .eq('project_id', projectId)
+      .eq('form_section', input.formSection)
+      .order('version', { ascending: false })
+      .limit(1)
+
+    if (priorError) throw new Error(`Could not save the draft: ${priorError.message}`)
+
+    // Version per section, not per project: section 2.4 reaching version 3 says
+    // nothing about 2.9.
+    const version = ((prior?.[0] as { version: number } | undefined)?.version ?? 0) + 1
+
+    if (version > 1) {
+      const { error: supersedeError } = await supabase
+        .from('drafts')
+        .update({ is_current: false })
+        .eq('project_id', projectId)
+        .eq('form_section', input.formSection)
+        .eq('is_current', true)
+
+      if (supersedeError) {
+        throw new Error(`Could not supersede the previous draft: ${supersedeError.message}`)
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('drafts')
+      .insert({
+        project_id: projectId,
+        form_section: input.formSection,
+        section_title: input.sectionTitle ?? null,
+        content: input.content,
+        version,
+        is_current: true,
+        // Guardrail 5. The table also refuses a row claiming AI authorship with
+        // no model version, so a bug here fails loudly rather than producing a
+        // draft nobody can attribute.
+        ai_generated: input.aiGenerated,
+        model_version: input.modelVersion,
+        edited_by_human: input.editedByHuman ?? false,
+        word_count: input.wordCount ?? null,
+        word_limit: input.wordLimit ?? null,
+        created_by: input.createdBy ?? null,
+      })
+      .select('*')
+      .single()
+
+    if (error) throw new Error(`Could not save the draft: ${error.message}`)
+    return toDraft(data as DraftRow)
   },
 
   async listInterpretations(projectId) {

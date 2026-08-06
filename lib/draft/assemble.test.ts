@@ -5,7 +5,7 @@ import {
   TRIAGE_SUMMARY_KEY,
   TRIAGE_TITLE_KEY,
 } from '@/lib/intake/questions'
-import type { AnswerMap, Project } from '@/lib/data/types'
+import type { AnswerMap, Draft, Project } from '@/lib/data/types'
 
 import { assembleDraft } from './assemble'
 
@@ -192,5 +192,112 @@ describe('guardrail 6: nothing here is a determination', () => {
     ].join(' ')
 
     expect(text).not.toMatch(/\b(approved|compliant|non-compliant|exempt|adequate|sufficient)\b/i)
+  })
+})
+
+describe('persisted drafts', () => {
+  function draftRecord(overrides: Partial<Draft> = {}): Draft {
+    return {
+      id: 'd1',
+      projectId: 'p1',
+      formSection: '2.3',
+      sectionTitle: 'Participants',
+      content: 'Participants are homeowners in rural Nova Scotia who own their home.',
+      version: 1,
+      isCurrent: true,
+      aiGenerated: true,
+      modelVersion: 'claude-opus-5',
+      editedByHuman: false,
+      wordCount: 11,
+      wordLimit: null,
+      createdAt: NOW.toISOString(),
+      ...overrides,
+    }
+  }
+
+  it('surfaces a drafted section and its text', () => {
+    const result = assembleDraft({
+      project: project(),
+      answers: SOME_ANSWERS,
+      drafts: [draftRecord()],
+      now: NOW,
+    })
+
+    const section = result.sections.find((entry) => entry.number === '2.3')!
+    expect(section.status).toBe('ai_drafted')
+    expect(section.content).toContain('rural Nova Scotia')
+  })
+
+  // Guardrail 5. The disclosure is assembled from the records, so a section a
+  // model wrote has to appear in it by its form number, not in aggregate.
+  it('names AI-drafted sections in the disclosure to the Board', () => {
+    const result = assembleDraft({
+      project: project(),
+      answers: SOME_ANSWERS,
+      drafts: [draftRecord()],
+      now: NOW,
+    })
+
+    expect(result.disclosure).toContain('2.3')
+  })
+
+  it('does not name a section the researcher wrote themselves', () => {
+    const result = assembleDraft({
+      project: project(),
+      answers: SOME_ANSWERS,
+      drafts: [draftRecord({ aiGenerated: false, modelVersion: null, editedByHuman: true })],
+      now: NOW,
+    })
+
+    const section = result.sections.find((entry) => entry.number === '2.3')!
+    expect(section.status).not.toBe('ai_drafted')
+    expect(section.content).toContain('rural Nova Scotia')
+    expect(result.disclosure).not.toMatch(/\b2\.3\b/)
+  })
+
+  // Guardrail 4 has to hold for a project flagged after a section was drafted,
+  // not only for one flagged during triage.
+  it('withholds a draft for a section blocked by a later triage flag', () => {
+    const result = assembleDraft({
+      project: project({ involvesCommunityEngagedResearch: true }),
+      answers: SOME_ANSWERS,
+      drafts: [draftRecord()],
+      now: NOW,
+    })
+
+    const section = result.sections.find((entry) => entry.number === '2.3')!
+    expect(section.status).not.toBe('ai_drafted')
+    expect(section.content).toBe('')
+    expect(section.blockedFromDrafting).toBe(true)
+    expect(result.disclosure).not.toMatch(/section 2\.3 was drafted/i)
+  })
+
+  it('reports a drafted section over the form limit without truncating it', () => {
+    const long = Array.from({ length: 620 }, (_value, index) => `word${index}`).join(' ')
+    const result = assembleDraft({
+      project: project(),
+      answers: SOME_ANSWERS,
+      drafts: [
+        draftRecord({ formSection: '2.1', content: long, wordCount: 620, wordLimit: 500 }),
+      ],
+      now: NOW,
+    })
+
+    const section = result.sections.find((entry) => entry.number === '2.1')!
+    expect(section.overWordLimit).toBe(true)
+    expect(section.content.split(/\s+/)).toHaveLength(620)
+  })
+
+  it('leaves undrafted sections alone', () => {
+    const result = assembleDraft({
+      project: project(),
+      answers: SOME_ANSWERS,
+      drafts: [draftRecord()],
+      now: NOW,
+    })
+
+    const section = result.sections.find((entry) => entry.number === '2.9')!
+    expect(section.status).toBe('awaiting_drafting')
+    expect(section.content).toBe('')
   })
 })

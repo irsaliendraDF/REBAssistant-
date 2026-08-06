@@ -124,16 +124,60 @@ convention carries meaning a green palette cannot replace.
 weeks. Brand presence is limited to the rule across the top, the wordmark, and
 primary actions.
 
+**Drafting is a button per section, not one button that writes the
+application.** Guardrail 3 is the reason, but the interface benefits either way:
+a researcher who drafts 2.3, reads it, and rewrites half of it has learned what
+the tool is for. One button producing eighteen sections invites a scroll and a
+download.
+
+**The drafting refusal reasons are written out in the interface, one message
+each, and the action passes only a code in the URL.** Model text and gate output
+never travel through a query string. The redaction refusal in particular has to
+say what the researcher should remove and that nothing was sent, because it fires
+on their own answers and reads as a failure otherwise.
+
+---
+
+## Drafting and the record of it
+
+**The form structure was validated against the real document.** `lib/form/dalhousie-sections.ts`
+was originally written from the build plan's description. It has since been
+checked line by line against `application-human-ethics-prospective-research.docx`
+(version April 2025), which found four errors: section 3 (Appendices) was missing
+entirely, 2.8 is indefinite retention rather than ordinary retention, and four
+section titles were wrong. Draft assembly, intake and gap findings all key off
+those numbers, so this was the highest-value correction in the repo.
+
+**Drafts are versioned, never overwritten.** `saveDraft` supersedes the previous
+version per section rather than per project, so 2.4 reaching version 3 says
+nothing about 2.9. Superseded versions are kept. The reason is guardrail 5: if an
+edit replaced the row, a researcher rewriting an AI-drafted section would erase
+the fact that a model wrote it, and the disclosure would quietly become false.
+
+**A human edit carries the AI provenance forward.** `saveSectionEdit` copies
+`aiGenerated` and `modelVersion` from the version it supersedes and sets
+`editedByHuman`. A section a model drafted stays recorded as model-drafted after
+a person rewrites a sentence in it. Editing is not a way to launder the
+disclosure; `editedByHuman` is what separates the two cases for the Board.
+
+**`modelVersion` records the model that answered, not the one requested.** With
+server-side fallback enabled a request for `claude-opus-5` can be served by
+another model. Storing what was asked for would be a plausible-looking record of
+something that did not happen.
+
+**Assembly withholds a draft for a section blocked at read time, not only at
+write time.** A project flagged as community-engaged after 2.3 was drafted must
+stop showing that draft. Checking only at generation would make guardrail 4 hold
+for projects flagged during triage and quietly fail for projects flagged later.
+
+**The export route reads the drafts too.** The .docx is the copy that reaches the
+Board. An export assembled without them would carry a disclosure stating nothing
+was AI-generated, which is the one sentence in the document that must never be
+wrong.
+
 ---
 
 ## Known provisional things
-
-**`lib/form/dalhousie-sections.ts` is written from the build plan's description
-of the form, not from the form itself.** Every section number, title and word
-limit needs checking against
-`application-human-ethics-prospective-research.docx` once it is ingested. This is
-the highest-value correction available in the repo, because draft assembly,
-intake and gap findings all key off those numbers.
 
 **The intake question set is a first draft** for the client's research ethics
 expert to revise. Wording, ordering, and what is required versus optional are all

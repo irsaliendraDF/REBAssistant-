@@ -8,6 +8,7 @@ import type {
   AnswerMap,
   ConsentRecord,
   DataStore,
+  Draft,
   MethodInterpretation,
   Profile,
   Project,
@@ -40,6 +41,7 @@ interface MemoryDatabase {
   projects: Map<string, Project>
   answers: Map<string, AnswerMap>
   interpretations: Map<string, MethodInterpretation[]>
+  drafts: Map<string, Draft[]>
   profiles: Map<string, Profile>
   consents: ConsentRecord[]
 }
@@ -56,6 +58,7 @@ function db(): MemoryDatabase {
   database.projects ??= new Map()
   database.answers ??= new Map()
   database.interpretations ??= new Map()
+  database.drafts ??= new Map()
   database.profiles ??= new Map()
   database.consents ??= []
   return database
@@ -166,6 +169,43 @@ export const memoryStore: DataStore = {
   async saveAnswers({ projectId, answers }) {
     const existing = db().answers.get(projectId) ?? {}
     db().answers.set(projectId, { ...existing, ...answers })
+  },
+
+  async listDrafts(projectId) {
+    await connection()
+    return (db().drafts.get(projectId) ?? []).filter((draft) => draft.isCurrent)
+  },
+
+  async saveDraft(projectId, input) {
+    const existing = db().drafts.get(projectId) ?? []
+
+    // Version per section, not per project: section 2.4 reaching version 3 says
+    // nothing about 2.9.
+    const priorForSection = existing.filter((draft) => draft.formSection === input.formSection)
+    const version = priorForSection.reduce((max, draft) => Math.max(max, draft.version), 0) + 1
+
+    for (const draft of priorForSection) {
+      draft.isCurrent = false
+    }
+
+    const saved: Draft = {
+      id: `${projectId}:${input.formSection}:${version}`,
+      projectId,
+      formSection: input.formSection,
+      sectionTitle: input.sectionTitle ?? null,
+      content: input.content,
+      version,
+      isCurrent: true,
+      aiGenerated: input.aiGenerated,
+      modelVersion: input.modelVersion,
+      editedByHuman: input.editedByHuman ?? false,
+      wordCount: input.wordCount ?? null,
+      wordLimit: input.wordLimit ?? null,
+      createdAt: new Date().toISOString(),
+    }
+
+    db().drafts.set(projectId, [...existing, saved])
+    return saved
   },
 
   async listInterpretations(projectId) {

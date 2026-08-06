@@ -137,6 +137,43 @@ export interface RespondInput {
   respondedBy: string
 }
 
+/**
+ * A generated section of the application.
+ *
+ * `aiGenerated` is not nullable, here or in the table. Guardrail 5: every draft
+ * record states whether a model wrote it, which is what lets the disclosure to
+ * the Board be assembled from fact rather than assumption. `modelVersion` is the
+ * model that actually produced the text, which after a fallback is not
+ * necessarily the one requested.
+ */
+export interface Draft {
+  id: string
+  projectId: string
+  formSection: string
+  sectionTitle: string | null
+  content: string
+  version: number
+  isCurrent: boolean
+  aiGenerated: boolean
+  modelVersion: string | null
+  editedByHuman: boolean
+  wordCount: number | null
+  wordLimit: number | null
+  createdAt: string
+}
+
+export interface NewDraft {
+  formSection: string
+  sectionTitle?: string | null
+  content: string
+  aiGenerated: boolean
+  modelVersion: string | null
+  editedByHuman?: boolean
+  wordCount?: number | null
+  wordLimit?: number | null
+  createdBy?: string
+}
+
 export interface TransitionInput {
   projectId: string
   from: ProjectState
@@ -172,6 +209,15 @@ export interface DataStore {
 
   getAnswers(projectId: string): Promise<AnswerMap>
   saveAnswers(input: SaveAnswersInput): Promise<void>
+
+  /** Current version of each drafted section. Superseded versions are kept. */
+  listDrafts(projectId: string): Promise<Draft[]>
+  /**
+   * Saves a new version and supersedes the previous one. Drafts are versioned
+   * rather than overwritten so a researcher can see that a section changed, and
+   * so the record of what was AI-generated survives a later human edit.
+   */
+  saveDraft(projectId: string, draft: NewDraft): Promise<Draft>
 
   listInterpretations(projectId: string): Promise<MethodInterpretation[]>
   /**

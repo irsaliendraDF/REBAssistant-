@@ -26,7 +26,11 @@ export async function GET(request: Request, ctx: RouteContext<'/project/[id]/exp
   }
 
   const answers = await store.getAnswers(id)
-  const draft = assembleDraft({ project, answers })
+  // Guardrail 8. The downloaded document is the copy that reaches the Board, so
+  // it has to carry the drafted sections and the disclosure built from them. An
+  // export that skipped the drafts would state that nothing was AI-generated.
+  const drafts = await store.listDrafts(id)
+  const draft = assembleDraft({ project, answers, drafts })
   const file = await renderDocx(draft)
 
   return new Response(new Uint8Array(file), {

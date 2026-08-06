@@ -38,6 +38,7 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
   const answers = await store.getAnswers(id)
   const interpretations =
     project.state === 'method_check' ? await store.listInterpretations(id) : []
+  const drafts = project.state === 'draft' ? await store.listDrafts(id) : []
 
   // Guardrail 7. Asked once per project, before any of the researcher's saved
   // details could be used, and only when there is something to reuse.
@@ -49,6 +50,8 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
   const missing = readList(search.missing)
   const saved = search.saved === '1'
   const rejected = search.rejected === '1'
+  const drafted = readOne(search.drafted)
+  const draftFailed = readOne(search.draftFailed)
 
   const sections = visibleSections(answers)
   const requested = readOne(search.section)
@@ -105,6 +108,19 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
         </p>
       ) : null}
 
+      {drafted ? (
+        <p className="rounded-md border border-forest/40 bg-lime-soft/40 px-4 py-3 text-xs leading-relaxed text-ink">
+          Section {drafted} saved. Open it below to read it. It is a draft, not a finished section:
+          check every detail against what you actually intend to do.
+        </p>
+      ) : null}
+
+      {draftFailed ? (
+        <p className="rounded-md border border-alert/40 bg-alert-soft px-4 py-3 text-xs leading-relaxed text-alert">
+          Section {draftFailed} was not drafted. {draftRefusalMessage(readOne(search.reason))}
+        </p>
+      ) : null}
+
       {missing.length > 0 ? (
         <p className="rounded-md border border-alert/40 bg-alert-soft px-4 py-3 text-xs leading-relaxed text-alert">
           {missing.length === 1
@@ -142,7 +158,7 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
       ) : project.state === 'draft' ? (
         <DraftStep
           projectId={project.id}
-          draft={assembleDraft({ project, answers })}
+          draft={assembleDraft({ project, answers, drafts })}
           modelConnected={isAnthropicConfigured}
         />
       ) : project.state === 'gap_analysis' ? (
@@ -175,6 +191,30 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
       </p>
     </div>
   )
+}
+
+/**
+ * Why a section was not drafted, in words rather than a code.
+ *
+ * Each of these is a real outcome the researcher needs to be able to act on, so
+ * none of them says "something went wrong". The redaction refusal in particular
+ * has to name what the researcher should do, since it fires on their own text.
+ */
+function draftRefusalMessage(reason: string | undefined): string {
+  switch (reason) {
+    case 'blocked_by_guardrail':
+      return 'This section is not drafted by the tool. It is yours to write, with the Research Ethics Office and, where relevant, the community.'
+    case 'no_source_material':
+      return 'There are no answers behind it yet, so there is nothing to draft from. Go back to intake and answer the questions for this section.'
+    case 'refused_by_redaction_gate':
+      return 'Your answers appear to contain information that must never be sent to an AI model, such as a health card number, Social Insurance Number or date of birth. Remove it from your answers and try again. Nothing was sent.'
+    case 'declined_by_model':
+      return 'The model declined to write it. If the section is unusual or sensitive, write it yourself and speak with the Research Ethics Office.'
+    case 'empty_edit':
+      return 'The edit was empty, so the existing draft has been left as it was.'
+    default:
+      return 'Please try again, and tell the Research Ethics Office if it keeps happening.'
+  }
 }
 
 /** An unrecognised filter shows everything, rather than an empty list. */

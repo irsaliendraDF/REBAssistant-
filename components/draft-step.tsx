@@ -1,4 +1,4 @@
-import { advanceWorkflow } from '@/app/project/[id]/actions'
+import { advanceWorkflow, draftSectionWithAi, saveSectionEdit } from '@/app/project/[id]/actions'
 import type { DraftPackage, DraftSection } from '@/lib/draft/assemble'
 
 /**
@@ -8,6 +8,11 @@ import type { DraftPackage, DraftSection } from '@/lib/draft/assemble'
  * anything, which sections have substance behind them and which do not. A
  * document that looks finished and is not is the failure mode worth designing
  * against here.
+ *
+ * Guardrail 3 is why drafting is a button per section rather than one button
+ * that writes the application. Each section is drafted because someone asked for
+ * that section, and every drafted section opens onto the text itself, editable,
+ * rather than a claim that it was written.
  */
 export function DraftStep({
   projectId,
@@ -18,6 +23,8 @@ export function DraftStep({
   draft: DraftPackage
   modelConnected: boolean
 }) {
+  const drafted = draft.sections.filter((section) => section.status === 'ai_drafted').length
+
   return (
     <div className="space-y-6">
       {!modelConnected ? (
@@ -27,24 +34,25 @@ export function DraftStep({
           rather than drafted prose. The structure, the numbering and the disclosure are real. The
           writing is still yours to do, or the tool’s once the model is connected.
         </p>
-      ) : null}
+      ) : (
+        <p className="rounded-md border border-line bg-surface px-4 py-3 text-xs leading-relaxed text-muted">
+          <span className="font-medium">Draft one section at a time.</span> Open a section to see
+          your answers, ask the tool to draft it, and edit what comes back. Nothing is drafted until
+          you ask for it, and every section a model helped write is recorded as such in the
+          disclosure that goes to the Board.
+          {drafted > 0 ? ` ${drafted} of ${draft.sections.length} drafted so far.` : ''}
+        </p>
+      )}
 
       <div className="overflow-hidden rounded-lg border border-line bg-white">
         <ul className="divide-y divide-line">
           {draft.sections.map((section) => (
-            <li key={section.number} className="flex items-start gap-4 px-5 py-3">
-              <span className="w-10 shrink-0 font-mono text-xs text-faint">
-                {section.number}
-              </span>
-              <span className="flex-1 text-sm text-ink">
-                {section.title}
-                {section.note ? (
-                  <span className="mt-0.5 block text-xs leading-relaxed text-muted">
-                    {section.note}
-                  </span>
-                ) : null}
-              </span>
-              <StatusBadge status={section.status} />
+            <li key={section.number}>
+              <SectionRow
+                projectId={projectId}
+                section={section}
+                modelConnected={modelConnected}
+              />
             </li>
           ))}
         </ul>
@@ -70,6 +78,122 @@ export function DraftStep({
         </form>
       </div>
     </div>
+  )
+}
+
+function SectionRow({
+  projectId,
+  section,
+  modelConnected,
+}: {
+  projectId: string
+  section: DraftSection
+  modelConnected: boolean
+}) {
+  // Drafting is offered where there is something to draft from and nothing
+  // stopping it. A blocked section never shows the button: guardrail 4 is
+  // enforced in `draftSection` regardless, but a button that only ever refuses
+  // is its own kind of dishonesty.
+  const canDraft =
+    modelConnected &&
+    !section.blockedFromDrafting &&
+    (section.status === 'awaiting_drafting' || section.status === 'ai_drafted')
+
+  const hasContent = section.content.trim().length > 0
+
+  return (
+    <details className="group">
+      <summary className="flex cursor-pointer list-none items-start gap-4 px-5 py-3 transition hover:bg-surface-2">
+        <span className="w-10 shrink-0 font-mono text-xs leading-5 text-faint">
+          {section.number}
+        </span>
+        <span className="flex-1 text-sm text-ink">
+          {section.title}
+          {section.note ? (
+            <span className="mt-0.5 block text-xs leading-relaxed text-muted">{section.note}</span>
+          ) : null}
+        </span>
+        <StatusBadge status={section.status} />
+        <span
+          aria-hidden
+          className="shrink-0 text-xs text-faint transition group-open:rotate-90"
+        >
+          ▸
+        </span>
+      </summary>
+
+      <div className="space-y-4 border-t border-line bg-surface px-5 py-4 pl-[3.75rem]">
+        {section.sources.length > 0 ? (
+          <div>
+            <p className="text-xs font-medium text-ink">Your Answers Behind This Section</p>
+            <dl className="mt-2 space-y-2">
+              {section.sources.map((source) => (
+                <div key={source.question}>
+                  <dt className="text-xs text-faint">{source.question}</dt>
+                  <dd className="text-xs leading-relaxed whitespace-pre-wrap text-muted">
+                    {source.answer}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        ) : (
+          <p className="text-xs leading-relaxed text-muted">
+            No answers were captured for this section.
+          </p>
+        )}
+
+        {hasContent ? (
+          <form action={saveSectionEdit} className="space-y-2">
+            <input type="hidden" name="projectId" value={projectId} />
+            <input type="hidden" name="formSection" value={section.number} />
+            <label
+              htmlFor={`draft-${section.number}`}
+              className="block text-xs font-medium text-ink"
+            >
+              The Draft. Edit It Freely: What You Submit Is Yours.
+            </label>
+            <textarea
+              id={`draft-${section.number}`}
+              name="content"
+              defaultValue={section.content}
+              rows={Math.min(24, Math.max(6, Math.ceil(section.content.length / 90)))}
+              className="w-full rounded-md border border-line bg-white px-3 py-2 text-sm leading-relaxed text-ink"
+            />
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="submit"
+                className="rounded-md border border-line bg-white px-3 py-2 text-xs font-medium text-muted transition hover:bg-surface-2"
+              >
+                Save Edit
+              </button>
+              <span className="text-xs text-faint">
+                {section.wordCount} {section.wordCount === 1 ? 'word' : 'words'}
+                {section.wordLimit ? ` of ${section.wordLimit} allowed` : ''}
+              </span>
+              {section.overWordLimit ? (
+                <span className="text-xs font-medium text-alert">
+                  Over the form’s limit. Shorten it before you submit.
+                </span>
+              ) : null}
+            </div>
+          </form>
+        ) : null}
+
+        {canDraft ? (
+          <form action={draftSectionWithAi}>
+            <input type="hidden" name="projectId" value={projectId} />
+            <input type="hidden" name="formSection" value={section.number} />
+            <button
+              type="submit"
+              className="rounded-md bg-forest px-3 py-2 text-xs font-medium text-white transition hover:bg-forest-dark"
+            >
+              {hasContent ? 'Draft This Section Again' : 'Draft This Section With AI'}
+            </button>
+          </form>
+        ) : null}
+      </div>
+    </details>
   )
 }
 

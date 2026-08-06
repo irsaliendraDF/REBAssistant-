@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation'
 
 import { getSession } from '@/lib/auth/session'
 import { getStore } from '@/lib/data'
+import { draftSection } from '@/lib/draft/generate'
+import { SECTIONS_BY_NUMBER, countWords, wordLimitFor } from '@/lib/form/dalhousie-sections'
 import {
   TRIAGE_QUESTIONS,
   TRIAGE_SUMMARY_KEY,
@@ -417,6 +419,108 @@ export async function advanceWorkflow(formData: FormData) {
   await store.updateProject(projectId, session.userId, { state: to })
 
   redirect(`/project/${projectId}`)
+}
+
+/**
+ * Guardrail 3 and guardrail 5, in one action.
+ *
+ * Nothing drafts itself. This runs because the researcher pressed the button for
+ * one named section, and what comes back is saved with `aiGenerated` set and the
+ * model that actually produced it recorded, before the text reaches the screen.
+ * A draft that could be displayed without that record is a draft the disclosure
+ * to the Board cannot account for.
+ *
+ * Guardrail 4 is not re-checked here. `draftSection` refuses a blocked section
+ * in code before a prompt exists, and duplicating the rule in the caller is how
+ * the two copies eventually disagree.
+ */
+export async function draftSectionWithAi(formData: FormData) {
+  const session = await getSession()
+  if (!session) redirect('/sign-in')
+
+  const projectId = String(formData.get('projectId') ?? '')
+  const formSection = String(formData.get('formSection') ?? '')
+
+  const store = getStore()
+  const project = await store.getProject(projectId, session.userId)
+  if (!project) redirect('/dashboard')
+
+  // Drafting belongs to the drafting step. Reached from an earlier one it would
+  // be writing up a study the researcher has not finished describing.
+  if (project.state !== 'draft') redirect(`/project/${projectId}`)
+
+  const answers = await store.getAnswers(projectId)
+  const result = await draftSection({
+    project,
+    answers,
+    formSection,
+    userId: session.userId,
+  })
+
+  if (!result.ok) {
+    // The reason travels as a code, not as prose. The refusal text belongs in
+    // the interface, where it can be written once and read the same every time.
+    redirect(
+      `/project/${projectId}?draftFailed=${encodeURIComponent(formSection)}&reason=${result.reason}`,
+    )
+  }
+
+  await store.saveDraft(projectId, {
+    formSection,
+    sectionTitle: SECTIONS_BY_NUMBER[formSection]?.title ?? null,
+    content: result.content,
+    aiGenerated: true,
+    modelVersion: result.modelVersion,
+    wordCount: result.wordCount,
+    wordLimit: result.wordLimit ?? null,
+    createdBy: session.userId,
+  })
+
+  redirect(`/project/${projectId}?drafted=${encodeURIComponent(formSection)}`)
+}
+
+/**
+ * A researcher's edit to a drafted section.
+ *
+ * Saved as a new version rather than over the old one, and the AI provenance is
+ * carried forward: a section a model drafted stays recorded as model-drafted
+ * after a person rewrites a sentence in it. Editing is not a way to launder the
+ * disclosure, and `editedByHuman` is what separates the two cases for the Board.
+ */
+export async function saveSectionEdit(formData: FormData) {
+  const session = await getSession()
+  if (!session) redirect('/sign-in')
+
+  const projectId = String(formData.get('projectId') ?? '')
+  const formSection = String(formData.get('formSection') ?? '')
+  const content = String(formData.get('content') ?? '').trim()
+
+  const store = getStore()
+  const project = await store.getProject(projectId, session.userId)
+  if (!project) redirect('/dashboard')
+  if (project.state !== 'draft') redirect(`/project/${projectId}`)
+
+  if (content.length === 0) {
+    // Saving nothing would supersede a real draft with a blank one. Silently.
+    redirect(`/project/${projectId}?draftFailed=${encodeURIComponent(formSection)}&reason=empty_edit`)
+  }
+
+  const drafts = await store.listDrafts(projectId)
+  const prior = drafts.find((draft) => draft.formSection === formSection)
+
+  await store.saveDraft(projectId, {
+    formSection,
+    sectionTitle: SECTIONS_BY_NUMBER[formSection]?.title ?? null,
+    content,
+    aiGenerated: prior?.aiGenerated ?? false,
+    modelVersion: prior?.modelVersion ?? null,
+    editedByHuman: true,
+    wordCount: countWords(content),
+    wordLimit: wordLimitFor(formSection) ?? null,
+    createdBy: session.userId,
+  })
+
+  redirect(`/project/${projectId}?drafted=${encodeURIComponent(formSection)}`)
 }
 
 function buildRoutingNote(flags: { indigenous: boolean; communityEngaged: boolean }): string | null {

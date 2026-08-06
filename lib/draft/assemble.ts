@@ -7,7 +7,7 @@ import {
 } from '@/lib/form/dalhousie-sections'
 import { allQuestions } from '@/lib/intake/questions'
 import { boardDisclosure } from '@/lib/disclosure/text'
-import type { AnswerMap, Project } from '@/lib/data/types'
+import type { AnswerMap, Draft, Project } from '@/lib/data/types'
 
 /**
  * Draft assembly.
@@ -80,20 +80,23 @@ export interface DraftPackage {
 export interface AssembleInput {
   project: Project
   answers: AnswerMap
+  /** Current drafted sections. Absent means nothing has been drafted yet. */
+  drafts?: Draft[]
   /** Injected so the output is reproducible in tests. */
   now?: Date
 }
 
-export function assembleDraft({ project, answers, now }: AssembleInput): DraftPackage {
+export function assembleDraft({ project, answers, drafts, now }: AssembleInput): DraftPackage {
   const flags = {
     indigenous: project.involvesIndigenousResearch,
     communityEngaged: project.involvesCommunityEngagedResearch,
   }
 
   const sources = sourcesBySection(answers)
+  const bySection = new Map((drafts ?? []).map((draft) => [draft.formSection, draft]))
 
   const sections = FORM_SECTIONS.map((section) =>
-    buildSection(section, sources[section.number] ?? [], flags, project),
+    buildSection(section, sources[section.number] ?? [], flags, project, bySection.get(section.number)),
   )
 
   const aiAssistedSections = sections
@@ -124,6 +127,7 @@ function buildSection(
   sources: SourceAnswer[],
   flags: { indigenous: boolean; communityEngaged: boolean },
   project: Project,
+  draft?: Draft,
 ): DraftSection {
   const wordLimit = wordLimitFor(section.number)
   const blocked = isGenerationBlocked(section.number, flags)
@@ -165,6 +169,27 @@ function buildSection(
       wordCount: countWords(content),
       overWordLimit: false,
       blockedFromDrafting: blocked,
+    }
+  }
+
+  // A drafted section, if one exists and the section is not blocked. The guard
+  // matters: a project flagged after a section was drafted must stop showing
+  // that draft, or guardrail 4 would hold only for projects flagged early.
+  if (draft && !blocked) {
+    const wordCount = draft.wordCount ?? countWords(draft.content)
+    return {
+      number: section.number,
+      title: section.title,
+      status: draft.aiGenerated ? 'ai_drafted' : 'from_record',
+      content: draft.content,
+      sources,
+      note: draft.aiGenerated
+        ? 'Drafted with AI assistance from your answers. Read it closely before you submit: you are responsible for what it says.'
+        : undefined,
+      wordLimit,
+      wordCount,
+      overWordLimit: wordLimit !== undefined && wordCount > wordLimit,
+      blockedFromDrafting: false,
     }
   }
 
