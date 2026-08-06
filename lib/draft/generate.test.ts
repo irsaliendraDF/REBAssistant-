@@ -12,9 +12,11 @@ import type { AnswerMap, Project } from '@/lib/data/types'
  */
 
 const callModel = vi.hoisted(() => vi.fn())
+const guidanceForSection = vi.hoisted(() => vi.fn(async () => []))
 
 vi.mock('@/lib/anthropic/client', () => ({ callModel }))
 vi.mock('server-only', () => ({}))
+vi.mock('@/lib/kb/retrieve', () => ({ guidanceForSection }))
 
 const { draftSection, sourcesFor } = await import('./generate')
 
@@ -240,5 +242,56 @@ describe('the request itself', () => {
 
     expect(result.ok).toBe(false)
     if (!result.ok) expect(result.reason).toBe('declined_by_model')
+  })
+})
+
+describe('Research Ethics Board guidance in the prompt', () => {
+  it('sends the guidance, marked as the Board’s and not the researcher’s', async () => {
+    guidanceForSection.mockResolvedValueOnce([
+      {
+        content: '2.4.1 Describe any third party whose permission is needed.',
+        citation: 'Dalhousie Research Ethics Board application guidelines, s. 2.4 Recruitment',
+        docTitle: 'guidelines',
+      },
+    ] as never)
+    mockSuccess('We will recruit through public notices.')
+
+    await draftSection({ project: project(), answers: ANSWERS, formSection: '2.4' })
+
+    const message = String(callModel.mock.calls.at(-1)![0].messages[0].content)
+    expect(message).toContain('2.4.1 Describe any third party')
+    expect(message).toContain('It is not the researcher')
+    // The researcher's own words come first. Guidance leading the prompt
+    // produces a draft that reads like the Board's checklist, not this study.
+    expect(message.indexOf('Posters in community centres')).toBeLessThan(
+      message.indexOf('2.4.1 Describe any third party'),
+    )
+  })
+
+  it('drafts anyway when the knowledge base is unreachable', async () => {
+    guidanceForSection.mockResolvedValueOnce([] as never)
+    mockSuccess('We will recruit through public notices.')
+
+    const result = await draftSection({
+      project: project(),
+      answers: ANSWERS,
+      formSection: '2.4',
+    })
+
+    expect(result.ok).toBe(true)
+    const message = String(callModel.mock.calls.at(-1)![0].messages[0].content)
+    expect(message).not.toContain('publishes the following guidance')
+  })
+
+  // Guardrail 6. The guidance describes what a Board expects, which is exactly
+  // the material that could tempt a claim that the expectation has been met.
+  it('forbids claiming the guidance is satisfied', async () => {
+    guidanceForSection.mockResolvedValueOnce([] as never)
+    mockSuccess('We will recruit through public notices.')
+    await draftSection({ project: project(), answers: ANSWERS, formSection: '2.4' })
+
+    const system = String(callModel.mock.calls.at(-1)![0].system).replace(/\s+/g, ' ')
+    expect(system).toMatch(/never claim the application meets it/i)
+    expect(system).toMatch(/the Board['’]s judgement, not yours/i)
   })
 })

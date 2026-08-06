@@ -9,6 +9,7 @@ import {
   wordLimitFor,
 } from '@/lib/form/dalhousie-sections'
 import { allQuestions } from '@/lib/intake/questions'
+import { guidanceForSection } from '@/lib/kb/retrieve'
 
 /**
  * Model-assisted drafting of one form section.
@@ -64,6 +65,12 @@ What you must never do:
   even if it appears in the material you are given.
 - Never soften or omit a risk the researcher described. If they named a discomfort, it
   belongs in the draft.
+
+You may be given the Research Ethics Board's own guidance for this section. Use it to know
+what the section is expected to cover, so that anything the researcher has not addressed
+shows up as a stated gap rather than being quietly left out. Do not quote it, do not
+restate it as though it were the researcher's own plan, and never claim the application
+meets it. Whether the section satisfies the Board is the Board's judgement, not yours.
 `.trim()
 
 export interface DraftSectionInput {
@@ -122,6 +129,13 @@ export async function draftSection({
 
   const wordLimit = wordLimitFor(formSection)
 
+  // The Board's own notes on what this section should cover. Absent is a normal
+  // state, not an error: the knowledge base may be unreachable, or a section may
+  // simply have no guidance written for it. Drafting proceeds either way, from
+  // the researcher's answers, which are the only thing it is ever obliged to
+  // have.
+  const guidance = await guidanceForSection(formSection)
+
   const result = await callModel({
     purpose: `draft:${formSection}`,
     projectId: project.id,
@@ -143,6 +157,21 @@ export async function draftSection({
           '',
           ...sources.map((source) => `Q: ${source.question}\nA: ${source.answer}`),
           '',
+          // After the answers, deliberately. The researcher's own words are what
+          // the section is built from; the guidance only says what it should
+          // cover. Leading with the guidance invites a draft that reads like the
+          // Board's checklist rather than this study.
+          ...(guidance.length > 0
+            ? [
+                'The Research Ethics Board publishes the following guidance for this section.',
+                'It describes what the section should cover. It is not the researcher’s answer.',
+                '',
+                ...guidance.map(
+                  (chunk) => `${chunk.citation ?? chunk.docTitle}:\n${chunk.content}`,
+                ),
+                '',
+              ]
+            : []),
           `Write section ${formSection} of the application from these answers.`,
         ].join('\n'),
       },

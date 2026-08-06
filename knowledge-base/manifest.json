@@ -1,5 +1,105 @@
 {
   "version": 1,
-  "updatedAt": null,
-  "documents": []
+  "updatedAt": "2026-08-06T18:17:53.761Z",
+  "documents": [
+    {
+      "contentHash": "f8735eaa6f66b23be46ee4c4fd2b9e05441193b6292753319fc804fe8e390f08",
+      "filename": "application-human-ethics-prospective-research.docx",
+      "title": "application-human-ethics-prospective-research",
+      "docType": "form",
+      "citationLabel": "Dalhousie Research Ethics Board application form (prospective research)",
+      "chunkCount": 74,
+      "ingestedAt": "2026-08-06T18:17:50.136Z"
+    },
+    {
+      "contentHash": "7310f0bb9653a8e71a118e93851deb4b876f6e20e929f924b701d6491348d4ab",
+      "filename": "confidentiality-agreement-template.pdf",
+      "title": "confidentiality-agreement-template",
+      "docType": "template",
+      "citationLabel": "Confidentiality agreement template",
+      "chunkCount": 1,
+      "ingestedAt": "2026-08-06T18:17:50.700Z"
+    },
+    {
+      "contentHash": "8f1f6310ddb43bf5289049202eacfc0153530894d950e0088d8dd32a8fd6cc09",
+      "filename": "consent-form-data-sharing-repository-future-research.pdf",
+      "title": "consent-form-data-sharing-repository-future-research",
+      "docType": "template",
+      "citationLabel": "Consent form template",
+      "chunkCount": 1,
+      "ingestedAt": "2026-08-06T18:17:51.104Z"
+    },
+    {
+      "contentHash": "c44d33dc8597aff0f9f5b2096efc30a641444323b58d4943305a51c4d74a04bb",
+      "filename": "consent-form-prospective-research-data-collection.pdf",
+      "title": "consent-form-prospective-research-data-collection",
+      "docType": "template",
+      "citationLabel": "Consent form template",
+      "chunkCount": 1,
+      "ingestedAt": "2026-08-06T18:17:51.475Z"
+    },
+    {
+      "contentHash": "2f1ba5cef33fe4dd8b3b6929ec5c2c9c11659c52450b1087a56a8ea8e6fffca3",
+      "filename": "consent-form-secondary-personal-records.pdf",
+      "title": "consent-form-secondary-personal-records",
+      "docType": "template",
+      "citationLabel": "Consent form template",
+      "chunkCount": 1,
+      "ingestedAt": "2026-08-06T18:17:51.786Z"
+    },
+    {
+      "contentHash": "5e200d6b5e2588c57063762075f67c96e83025b30cb50cd1ef1cef72ee8774f3",
+      "filename": "consent-form-secondary-research-existing-records.pdf",
+      "title": "consent-form-secondary-research-existing-records",
+      "docType": "template",
+      "citationLabel": "Consent form template",
+      "chunkCount": 1,
+      "ingestedAt": "2026-08-06T18:17:52.060Z"
+    },
+    {
+      "contentHash": "a76837d74dccc29f12a47fc425a304981249b98f99824651e3374bc23bc9505f",
+      "filename": "consent-form-template-online-survey.pdf",
+      "title": "consent-form-template-online-survey",
+      "docType": "template",
+      "citationLabel": "Consent form template",
+      "chunkCount": 1,
+      "ingestedAt": "2026-08-06T18:17:52.308Z"
+    },
+    {
+      "contentHash": "7f32ba093a4f1828aa5d7932451c8911c3310a5e80e008807411a158a714d85f",
+      "filename": "Draft Research Proposal_ Community Retrofit Readiness and Derisking Framework.docx",
+      "title": "Draft Research Proposal_ Community Retrofit Readiness and Derisking Framework",
+      "docType": "test_material",
+      "citationLabel": "Test material (not guidance)",
+      "chunkCount": 4,
+      "ingestedAt": "2026-08-06T18:17:52.548Z"
+    },
+    {
+      "contentHash": "23dbd3e339cfd057b3e7f1b68168cae54dbc381f453797e2f8c5e0be416f768c",
+      "filename": "Future Civics - Braindump - REB CHAT.docx",
+      "title": "Future Civics - Braindump - REB CHAT",
+      "docType": "test_material",
+      "citationLabel": "Test material (not guidance)",
+      "chunkCount": 3,
+      "ingestedAt": "2026-08-06T18:17:52.799Z"
+    },
+    {
+      "contentHash": "424a67cb838bdcc67515208fc421c38e745721ce333b15536fa07432f8b1c267",
+      "filename": "hints-for-research-recruitment-messages.pdf",
+      "title": "hints-for-research-recruitment-messages",
+      "docType": "guideline",
+      "citationLabel": "Recruitment message guidance",
+      "chunkCount": 1,
+      "ingestedAt": "2026-08-06T18:17:53.131Z"
+    },
+    {
+      "contentHash": "4ebeb8f5a83d7dacdf5ef3bf6acd64f753f633381dd5d3154dbf5fa3a78c3951",
+      "filename": "reb-application-guidelines-for-prospective-research.pdf",
+      "title": "reb-application-guidelines-for-prospective-research",
+      "docType": "guideline",
+      "citationLabel": "Dalhousie Research Ethics Board application guidelines",
+      "chunkCount": 20,
+      "ingestedAt": "2026-08-06T18:17:53.761Z"
+    }
+  ]
 }
