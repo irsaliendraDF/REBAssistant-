@@ -42,15 +42,46 @@ and what to do if it was unexpected, the link is shown as text as well as a
 button for clients that strip buttons, and it looks like the app it came from.
 
 They do not fix the sender. With Supabase's built-in email service every message
-comes from a generic Supabase address, and that address cannot be changed from
-the dashboard. It is the single strongest reason a message lands in spam, and no
-amount of template work touches it.
+comes from a generic Supabase address that the dashboard cannot change, and that
+is the single strongest reason a message lands in spam. Custom SMTP was turned on
+for exactly that reason on 6 August 2026.
 
-Fixing it needs custom SMTP on a real domain, under **Project Settings →
-Authentication → SMTP Settings**. Brevo or Resend both work; whichever is used,
-the domain needs SPF and DKIM records or deliverability gets worse rather than
-better.
+## Current mail configuration
 
-That is worth doing before real researchers are invited, for a second reason:
-Supabase's built-in sender is rate limited to a handful of messages an hour. It
-is fine for a few test users in August and will not survive a cohort.
+Under **Authentication → Emails → SMTP Settings**. Custom SMTP is on and mail
+goes out through Gmail:
+
+| Setting | Value |
+|---|---|
+| Sender email address | `researchethicsboardassistant@gmail.com` |
+| Sender name | Research Ethics Board Assistant |
+| Host | `smtp.gmail.com` |
+| Port | 465 |
+| Minimum interval per user | 60 seconds |
+| Username | `researchethicsboardassistant@gmail.com` |
+| Password | A Google App Password, not the account password |
+
+Gmail will not accept an account password over SMTP. The value in that field is a
+16-character App Password generated at `myaccount.google.com/apppasswords`, which
+requires 2-Step Verification to be enabled on the mailbox first. If mail suddenly
+stops sending, the App Password having been revoked is the first thing to check.
+
+The mailbox itself is a dedicated account created for this project, not a
+personal one. See the handover document for how the account and its recovery
+material are held.
+
+## Before real researchers are invited
+
+Gmail SMTP is fine for the August test group. Two things make it wrong for a
+cohort:
+
+- It caps at roughly 500 messages a day, and it is a personal-tier mailbox doing
+  a product's job.
+- The address is a `gmail.com` one. Deliverability on a real domain with SPF and
+  DKIM records is meaningfully better, and looks like what it is.
+
+When that move happens, use a **Future Civics** domain, not a DigitalFlow one.
+This product transfers to Future Civics, and sending their researchers' sign-in
+mail from the contractor's domain works right up until the transfer and then
+becomes something someone has to unpick under time pressure. Brevo and Resend
+both do this well.
