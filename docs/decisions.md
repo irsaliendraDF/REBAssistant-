@@ -239,6 +239,55 @@ wrong.
 expert to revise. Wording, ordering, and what is required versus optional are all
 open. It is one file, so her feedback is cheap to apply.
 
+**Similarity search over the knowledge base was deliberately not built. Here is
+exactly what to look at if you want it.**
+
+The scaffold assumed a vector search: text turned into numbers by an embedding
+model, so the tool could ask "which passage of TCPS 2 is closest to what this
+researcher wrote". Anthropic does not sell embeddings, so this needs a second
+vendor. Voyage AI was the scaffold's default because Anthropic's documentation
+recommends them, and `voyage-3.5` returns 1024 numbers per passage, which is
+where `EMBEDDING_DIMENSION = 1024` came from. Nobody chose that; it was a
+placeholder.
+
+It was dropped for Phase 1 because the corpus is small, fixed, and maps onto the
+form deterministically. Form section 2.13 is Indigenous research, which is TCPS 2
+Chapter 9. Section 2.5 is consent, which is Chapter 3. That relationship is a
+table a person can write down, read, and correct, and the research ethics expert
+reviewing this build can audit a table. She cannot audit a similarity score. For
+a tool whose entire design is that a human can see and correct what it did,
+guessing that relationship from numbers is the wrong trade, and it matches what
+`analyseGaps` already does: cite TCPS 2 at chapter level, never invent an article
+number.
+
+What we give up: a researcher writes something unusual and the relevant guidance
+sits somewhere a fixed table would not predict. Similarity search would find it.
+A table will not. If the August test users hit that, this is the thing to
+revisit.
+
+If you do revisit it, everything needed is still in place and nothing has to be
+undone:
+
+- `supabase/migrations/20260805000800_knowledge_base.sql` already creates
+  `kb_documents`, `kb_chunks` with a `vector(1024)` column, and the
+  `match_kb_chunks` function. Verified working against the live database: it
+  accepts a 1024-dimension query vector.
+- `lib/kb/retrieve.ts` already calls `match_kb_chunks`. It needs a query vector
+  and nothing else.
+- `lib/kb/chunk.ts` and `lib/kb/manifest.ts` are finished and are shared with the
+  Phase 1 approach, so they stay in use either way.
+- `lib/kb/ingest.ts` is the only unfinished piece. It throws deliberately rather
+  than pretending to work.
+- `EMBEDDING_DIMENSION` in `lib/kb/config.ts` and the `vector(...)` column in
+  that migration must match. They are stated in those two places and nowhere
+  else. Changing the number means a migration and a full re-ingest.
+- `EMBEDDING_API_KEY` and `EMBEDDING_MODEL` already exist in `lib/env.ts`, and
+  `isEmbeddingsConfigured` already reports whether they are set.
+
+The vendor is not a commitment. If you pick a provider whose output is not 1024
+numbers wide, change the migration and the config together and re-ingest. There
+is no data to lose, because none has ever been written.
+
 **The structured-output path has not been exercised against the live API.**
 `interpretMethodology` is the only call that asks for a JSON schema. The unit
 tests mock the client, and the machine this was built on has no API key, so the
