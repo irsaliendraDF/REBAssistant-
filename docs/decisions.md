@@ -148,6 +148,31 @@ a researcher who drafts 2.3, reads it, and rewrites half of it has learned what
 the tool is for. One button producing eighteen sections invites a scroll and a
 download.
 
+**There is a checkpoint between every pair of stages, and it is the only place
+a project moves forward.** Guardrail 3 already refused to advance a project
+without a user action, but "Save and Continue" at the foot of a long form is an
+action people take without reading what is above it. The checkpoint reads back
+what the stage captured, says what confirming starts, and asks again.
+
+The state machine did not grow five new states for this. A checkpoint is a view
+of the state a project is already in, chosen by a query parameter and validated
+against that state, so the six-step progress track a researcher sees never
+becomes eleven. `lib/workflow/checkpoints.ts` holds the definitions and the
+summary builder; `confirmCheckpoint` in the project actions is the single writer
+of every forward transition, and `checkpoints.test.ts` asserts that every forward
+move in the state machine has a checkpoint in front of it, so a stage added later
+cannot quietly skip one.
+
+Blockers on a checkpoint are recomputed on the server when the researcher
+confirms, rather than trusted from the screen. A disabled button is an interface,
+not a rule, and two tabs are enough to prove the difference.
+
+**Building the method readings moved to the checkpoint, not the end of intake.**
+It is the one model call the workflow makes on the researcher's behalf, and it
+now happens after they have confirmed that intake says what they meant it to say.
+A project sent back and returned still gets readings built from the answers as
+they now stand.
+
 **The drafting refusal reasons are written out in the interface, one message
 each, and the action passes only a code in the URL.** Model text and gate output
 never travel through a query string. The redaction refusal in particular has to
@@ -230,6 +255,32 @@ researcher who ran a study two years ago has not thereby handled this one.
 Board. An export assembled without them would carry a disclosure stating nothing
 was AI-generated, which is the one sentence in the document that must never be
 wrong.
+
+**Companion documents are suggested by rule, not by a model, and the tool does
+not draft them.** Section 3 of the form asks for appendices, and a Board sends
+back an application whose consent form, instrument or permission letter is
+missing. `lib/documents/companions.ts` works out which of those this study needs
+from answers the researcher has already given, so every entry can say why it
+appeared.
+
+Rules rather than a model, for the reason gap analysis gives: a rule that always
+notices a study is running interviews beats a model that usually does, and a
+researcher who asks why a document is on their list gets an answer. Nothing is
+sent anywhere to produce the list.
+
+Drafting them is out of scope and should stay there. The Board reads the wording
+participants are actually given, and a consent form generated from an
+application, into which the researcher pastes their study, is how a limit on
+confidentiality declared at 2.7 fails to appear in front of a participant. The
+tool names the Dalhousie template instead, and says what the document has to
+contain.
+
+**A template is named even where it cannot be downloaded.** The source documents
+are client material and are gitignored, so a deployment has the manifest and none
+of the files. `lib/documents/templates.ts` tells the two apart: `known` comes
+from the manifest, `downloadable` from the filesystem. A link that 404s is worse
+than no link, and the name of the right template is the part a researcher cannot
+work out alone.
 
 ---
 

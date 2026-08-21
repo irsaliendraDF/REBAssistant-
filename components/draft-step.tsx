@@ -73,7 +73,7 @@ export function DraftStep({
             type="submit"
             className="rounded-md bg-forest px-4 py-2.5 text-sm font-medium text-white transition hover:bg-forest-dark"
           >
-            Continue to Gap Analysis
+            Review Before Gap Analysis
           </button>
         </form>
       </div>

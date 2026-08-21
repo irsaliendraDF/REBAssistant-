@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation'
 
 import { BackButton, BackLink } from '@/components/back-link'
+import { CheckpointStep } from '@/components/checkpoint-step'
+import { CompleteStep } from '@/components/complete-step'
 import { DraftStep } from '@/components/draft-step'
 import { GapAnalysisStep } from '@/components/gap-analysis-step'
 import { IntakeStep } from '@/components/intake-step'
@@ -12,11 +14,17 @@ import { WorkflowProgress } from '@/components/workflow-progress'
 import { hasAnythingToReuse } from '@/lib/profile/tombstone'
 import { getSession } from '@/lib/auth/session'
 import { getStore } from '@/lib/data'
+import {
+  suggestCompanionDocuments,
+  templatesReferenced,
+} from '@/lib/documents/companions'
+import { templateAvailability, type TemplateAvailability } from '@/lib/documents/templates'
 import { assembleDraft } from '@/lib/draft/assemble'
 import { isAnthropicConfigured } from '@/lib/env'
 import { analyseGaps, type GapSeverity } from '@/lib/gaps/analyse'
 import { visibleSections } from '@/lib/intake/questions'
 import { displayTitle } from '@/lib/text'
+import { buildCheckpoint, isCheckpointFor } from '@/lib/workflow/checkpoints'
 import { STATE_DEFINITIONS, canGoBack, previousState } from '@/lib/workflow/states'
 
 import { stepBack } from './actions'
@@ -69,6 +77,27 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
 
   const definition = STATE_DEFINITIONS[project.state]
 
+  // A checkpoint sits between two stages, so it is a view of the state the
+  // project is in rather than a state of its own. The parameter asks for it; the
+  // project's own state decides whether that is the checkpoint it is at.
+  const checkpoint =
+    isCheckpointFor(project.state, readOne(search.checkpoint)) && !needsReuseDecision
+      ? buildCheckpoint({ project, answers, interpretations, drafts })
+      : null
+
+  // Only at the end, where there is enough on record to name the documents
+  // specifically rather than reprinting the form's own appendix list.
+  const companions =
+    project.state === 'complete' ? suggestCompanionDocuments(project, answers) : []
+  const templates: Record<string, TemplateAvailability> =
+    companions.length > 0
+      ? Object.fromEntries(
+          await templateAvailability(
+            templatesReferenced(companions).map((template) => template.filename),
+          ),
+        )
+      : {}
+
   return (
     <div className="space-y-8">
       <div>
@@ -86,7 +115,7 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
       {/* One consistent place on every step, rather than a different affordance
           per screen. Hidden during the reuse decision, which has to be answered
           before the application has a step to return to. */}
-      {canGoBack(project.state) && !needsReuseDecision ? (
+      {canGoBack(project.state) && !needsReuseDecision && !checkpoint ? (
         <form action={stepBack}>
           <input type="hidden" name="projectId" value={project.id} />
           <BackButton>
@@ -147,6 +176,8 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
 
       {needsReuseDecision && profile ? (
         <TombstoneReuseStep projectId={project.id} profile={profile} />
+      ) : checkpoint ? (
+        <CheckpointStep projectId={project.id} summary={checkpoint} />
       ) : project.state === 'triage' ? (
         <TriageStep projectId={project.id} answers={answers} missing={missing} />
       ) : project.state === 'method_check' ? (
@@ -178,20 +209,7 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
           modelConnected={isAnthropicConfigured}
         />
       ) : (
-        <div className="rounded-lg border border-line bg-white p-10 text-center">
-          <p className="text-sm font-medium text-ink">Ready for You to Review</p>
-          <p className="mx-auto mt-2 max-w-lg text-sm leading-relaxed text-muted">
-            Download the document, check it, complete anything the tool left to you, and submit it
-            yourself. Research Ethics Board Assistant does not submit applications and does not
-            decide whether research is approved.
-          </p>
-          <a
-            href={`/project/${project.id}/export`}
-            className="mt-6 inline-block rounded-md bg-forest px-4 py-2.5 text-sm font-medium text-white transition hover:bg-forest-dark"
-          >
-            Download Draft (.docx)
-          </a>
-        </div>
+        <CompleteStep projectId={project.id} documents={companions} availability={templates} />
       )}
 
       {showsParticipantDisclosure ? (

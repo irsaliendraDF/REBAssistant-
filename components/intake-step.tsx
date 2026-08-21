@@ -120,7 +120,7 @@ export function IntakeStep({
             value="advance"
             className="rounded-md bg-forest px-4 py-2.5 text-sm font-medium text-white transition hover:bg-forest-dark"
           >
-            {isLast ? 'Save and Continue to Method Check' : 'Save and Next Section'}
+            {isLast ? 'Save and Review Before the Method Check' : 'Save and Next Section'}
           </button>
           <button
             type="submit"

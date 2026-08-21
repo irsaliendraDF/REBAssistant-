@@ -12,7 +12,7 @@ import { allResolved, hasRejection } from '@/lib/method/interpret'
  * Three deliberate choices in this screen. Confirm is not the default and
  * nothing is preselected, because a preselected confirm is a rubber stamp with
  * extra steps. Altering or rejecting requires writing what is wrong, which the
- * database enforces too. And "Continue to Drafting" stays disabled until every
+ * database enforces too. And "Review Before Drafting" stays disabled until every
  * reading has an answer, so the gate cannot be walked past.
  */
 export function MethodCheckStep({
@@ -176,7 +176,7 @@ export function MethodCheckStep({
           disabled={!resolved || rejected}
           className="rounded-md bg-forest px-4 py-2.5 text-sm font-medium text-white transition hover:bg-forest-dark disabled:cursor-not-allowed disabled:bg-line"
         >
-          Continue to Drafting
+          Review Before Drafting
         </button>
         <p className="mt-2 text-xs text-muted">
           {resolved && !rejected

@@ -26,13 +26,14 @@ app/                  Next.js App Router
 components/           shared UI: app shell, progress track, question fields
 lib/
   data/               the store interface, in-memory and Supabase implementations
+  documents/          companion documents this study needs, and the templates for them
   intake/             the question set, keyed to form sections
   anthropic/          redaction gate and the single model-call chokepoint
   auth/               session handling
   form/               the Dalhousie form structure, section numbers and word limits
   kb/                 knowledge base ingestion, chunking, retrieval
   supabase/           browser, server and service-role clients
-  workflow/           the state machine
+  workflow/           the state machine and the checkpoints between its stages
 supabase/migrations/  schema, version controlled, plain SQL
 knowledge-base/
   source/             source documents, gitignored
@@ -94,6 +95,14 @@ Built:
 
 - The method check loop: confirm, correct or reject, with rejection sending the
   project back to intake and a correction required before either
+
+- A checkpoint between every pair of stages: what the stage captured, read back,
+  with what confirming will start. Confirming at a checkpoint is the only way a
+  project moves forward
+
+- Companion documents: at the end of the workflow, the consent forms,
+  instruments, permission letters and agreements this study's own answers point
+  at, each with what it has to contain and the Dalhousie template that covers it
 
 Not built yet, in build-sequence order:
 

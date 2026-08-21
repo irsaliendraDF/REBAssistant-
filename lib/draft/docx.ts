@@ -10,6 +10,7 @@ import {
 } from 'docx'
 
 import { PARTICIPANT_CONSENT_DISCLOSURE } from '@/lib/disclosure/text'
+import type { CompanionDocument } from '@/lib/documents/companions'
 
 import type { DraftPackage, DraftSection } from './assemble'
 
@@ -124,6 +125,11 @@ export async function renderDocx(draft: DraftPackage): Promise<Buffer> {
     ...disclosureParagraphs(PARTICIPANT_CONSENT_DISCLOSURE),
   )
 
+  // The appendices this study needs, for the same reason as the block above: the
+  // document is what the researcher works from once they have closed the tool,
+  // and the consent form and the instrument get written at a desk, not here.
+  children.push(...companionParagraphs(draft.companionDocuments))
+
   const document = new Document({
     creator: 'Research Ethics Board Assistant',
     title: draft.title,
@@ -204,6 +210,97 @@ function sectionParagraphs(section: DraftSection): Paragraph[] {
       }
     }
   }
+
+  return paragraphs
+}
+
+const NECESSITY_LABELS: Record<CompanionDocument['necessity'], string> = {
+  required: 'Expected',
+  likely: 'Likely needed',
+  consider: 'Worth considering',
+}
+
+/**
+ * The companion documents, as an appendix to the draft.
+ *
+ * Guardrail 6 applies here as it does on the screen: these are the documents the
+ * form and the Board ask for, described. Nothing in this appendix says the
+ * submission is complete once they exist, and the closing line keeps the
+ * Research Ethics Office as the authority on what a given submission needs.
+ */
+function companionParagraphs(documents: CompanionDocument[]): Paragraph[] {
+  if (documents.length === 0) return []
+
+  const paragraphs: Paragraph[] = [
+    paragraphSpacer(),
+    new Paragraph({
+      text: 'Companion Documents to Prepare',
+      heading: HeadingLevel.HEADING_1,
+    }),
+    new Paragraph({
+      children: [
+        new TextRun({
+          text:
+            'This is not part of the application. Section 3 of the form asks for appendices, and ' +
+            'these are the ones your answers point at. Research Ethics Board Assistant does not ' +
+            'write them: the Board reads the wording participants are actually given.',
+          italics: true,
+        }),
+      ],
+    }),
+  ]
+
+  for (const document of documents) {
+    paragraphs.push(
+      paragraphSpacer(),
+      new Paragraph({
+        children: [
+          new TextRun({ text: document.title, bold: true, size: 22 }),
+          new TextRun({ text: `  ${NECESSITY_LABELS[document.necessity]}`, size: 18, italics: true }),
+        ],
+      }),
+      new Paragraph({
+        children: [new TextRun({ text: document.why, size: 20 })],
+      }),
+    )
+
+    for (const line of document.checklist) {
+      paragraphs.push(new Paragraph({ text: line, bullet: { level: 0 } }))
+    }
+
+    if (document.templateLabel) {
+      paragraphs.push(
+        new Paragraph({
+          children: [
+            new TextRun({ text: `Template: ${document.templateLabel}.`, size: 18, italics: true }),
+          ],
+        }),
+      )
+    }
+
+    paragraphs.push(
+      new Paragraph({
+        children: [
+          new TextRun({ text: `Appendix: ${document.appendix}.`, size: 18, italics: true }),
+        ],
+      }),
+    )
+  }
+
+  paragraphs.push(
+    paragraphSpacer(),
+    new Paragraph({
+      children: [
+        new TextRun({
+          text:
+            'This list is built from your answers by rule, not by a model. It is not a complete ' +
+            'account of what your submission needs. The Research Ethics Office is.',
+          italics: true,
+          size: 18,
+        }),
+      ],
+    }),
+  )
 
   return paragraphs
 }

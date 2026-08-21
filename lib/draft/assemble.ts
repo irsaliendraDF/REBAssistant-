@@ -7,6 +7,7 @@ import {
 } from '@/lib/form/dalhousie-sections'
 import { allQuestions } from '@/lib/intake/questions'
 import { boardDisclosure } from '@/lib/disclosure/text'
+import { suggestCompanionDocuments, type CompanionDocument } from '@/lib/documents/companions'
 import type { AnswerMap, Draft, Project } from '@/lib/data/types'
 
 /**
@@ -75,6 +76,13 @@ export interface DraftPackage {
   disclosure: string
   /** Sections with no answers behind them yet. Advisory, for the researcher. */
   incompleteSections: string[]
+  /**
+   * The appendices this study's answers point at: consent forms, instruments,
+   * permission letters. They travel with the document because the document is
+   * what the researcher works from once they have left the tool, and a Board
+   * asks for these alongside the application rather than after it.
+   */
+  companionDocuments: CompanionDocument[]
 }
 
 export interface AssembleInput {
@@ -119,6 +127,7 @@ export function assembleDraft({ project, answers, drafts, now }: AssembleInput):
     incompleteSections: sections
       .filter((section) => section.status === 'no_answers_yet')
       .map((section) => section.number),
+    companionDocuments: suggestCompanionDocuments(project, answers),
   }
 }
 

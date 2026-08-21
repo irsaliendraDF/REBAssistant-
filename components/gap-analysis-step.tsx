@@ -132,7 +132,7 @@ export function GapAnalysisStep({
           type="submit"
           className="rounded-md bg-forest px-4 py-2.5 text-sm font-medium text-white transition hover:bg-forest-dark"
         >
-          Mark as Ready to Review
+          Review Before Finishing
         </button>
         <p className="mt-2 max-w-2xl text-xs leading-relaxed text-muted">
           You can continue with findings outstanding. These are observations for you to weigh, not

@@ -41,7 +41,7 @@ export function TriageStep({
           value="advance"
           className="rounded-md bg-forest px-4 py-2.5 text-sm font-medium text-white transition hover:bg-forest-dark"
         >
-          Save and Continue to Intake
+          Save and Review Before Intake
         </button>
         <button
           type="submit"

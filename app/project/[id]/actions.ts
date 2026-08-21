@@ -23,7 +23,13 @@ import {
   filledFields,
   reuseDisclosure,
 } from '@/lib/profile/tombstone'
-import { assertValidStepBack, assertValidTransition, previousState } from '@/lib/workflow/states'
+import { buildCheckpoint, checkpointFor, type CheckpointId } from '@/lib/workflow/checkpoints'
+import {
+  STATE_DEFINITIONS,
+  assertValidStepBack,
+  assertValidTransition,
+  previousState,
+} from '@/lib/workflow/states'
 import type { AnswerMap } from '@/lib/data/types'
 
 /**
@@ -33,9 +39,20 @@ import type { AnswerMap } from '@/lib/data/types'
  * separate button the researcher presses. There is no path here where answering
  * the last question moves the project on by itself.
  *
+ * Since checkpoints, that separation has a third part. Finishing a stage takes
+ * the researcher to the checkpoint for it, and the checkpoint is the only place
+ * a forward transition happens: `confirmCheckpoint` is the single writer of
+ * every forward state change in this file. The actions below validate what they
+ * always validated and then hand over, so there is no route that finishes a
+ * stage and advances in the same request.
+ *
  * Every advance goes through `assertValidTransition`, which requires an actor,
  * and is written to the transition log before the state changes.
  */
+
+function checkpointUrl(projectId: string, id: CheckpointId): string {
+  return `/project/${projectId}?checkpoint=${id}`
+}
 
 function collectAnswers(formData: FormData, keys: string[]): AnswerMap {
   const answers: AnswerMap = {}
@@ -89,24 +106,10 @@ export async function saveTriage(formData: FormData) {
     redirect(`/project/${projectId}?missing=${encodeURIComponent(missing.join(','))}`)
   }
 
-  assertValidTransition({
-    projectId,
-    from: project.state,
-    to: 'intake',
-    actorId: session.userId,
-    reason: 'Triage completed by researcher',
-  })
-
-  await store.recordTransition({
-    projectId,
-    from: project.state,
-    to: 'intake',
-    actorId: session.userId,
-    reason: 'Triage completed by researcher',
-  })
-  await store.updateProject(projectId, session.userId, { state: 'intake' })
-
-  redirect(`/project/${projectId}`)
+  // The checkpoint, not the next stage. What triage captured decides whether the
+  // tool will draft parts of this application at all, so it is read back before
+  // intake starts rather than discovered halfway through.
+  redirect(checkpointUrl(projectId, 'triage'))
 }
 
 export async function saveIntakeSection(formData: FormData) {
@@ -160,37 +163,10 @@ export async function saveIntakeSection(formData: FormData) {
     redirect(`/project/${projectId}?section=${encodeURIComponent(next.formSection)}`)
   }
 
-  assertValidTransition({
-    projectId,
-    from: project.state,
-    to: 'method_check',
-    actorId: session.userId,
-    reason: 'Intake completed by researcher',
-  })
-
-  // Built from the answers as they now stand, replacing any set from a previous
-  // round that the researcher sent back. Model-reasoned where the model is
-  // available, rule-derived where it is not: `interpretMethodology` decides, and
-  // `modelVersion` records which of the two the researcher was shown.
-  await store.replaceInterpretations(
-    projectId,
-    await interpretMethodology({
-      project,
-      answers: { ...existing, ...answers },
-      userId: session.userId,
-    }),
-  )
-
-  await store.recordTransition({
-    projectId,
-    from: project.state,
-    to: 'method_check',
-    actorId: session.userId,
-    reason: 'Intake completed by researcher',
-  })
-  await store.updateProject(projectId, session.userId, { state: 'method_check' })
-
-  redirect(`/project/${projectId}`)
+  // The checkpoint. Building the readings is a model call, so it belongs after
+  // the researcher has confirmed that intake says what they meant it to say,
+  // not before.
+  redirect(checkpointUrl(projectId, 'intake'))
 }
 
 /**
@@ -273,24 +249,7 @@ export async function advanceToDraft(formData: FormData) {
     redirect(`/project/${projectId}?unresolved=1`)
   }
 
-  assertValidTransition({
-    projectId,
-    from: project.state,
-    to: 'draft',
-    actorId: session.userId,
-    reason: 'Researcher confirmed the reading of the methodology',
-  })
-
-  await store.recordTransition({
-    projectId,
-    from: project.state,
-    to: 'draft',
-    actorId: session.userId,
-    reason: 'Researcher confirmed the reading of the methodology',
-  })
-  await store.updateProject(projectId, session.userId, { state: 'draft' })
-
-  redirect(`/project/${projectId}`)
+  redirect(checkpointUrl(projectId, 'method_check'))
 }
 
 /**
@@ -385,7 +344,8 @@ export async function stepBack(formData: FormData) {
 
 /**
  * The remaining forward steps. Each is a separate button the researcher presses,
- * for the same reason as every other transition in this file.
+ * for the same reason as every other transition in this file, and each now leads
+ * to the checkpoint for that boundary rather than through it.
  */
 export async function advanceWorkflow(formData: FormData) {
   const session = await getSession()
@@ -404,15 +364,74 @@ export async function advanceWorkflow(formData: FormData) {
     redirect(`/project/${projectId}`)
   }
 
+  const definition = checkpointFor(project.state)
+  if (!definition || definition.to !== to) {
+    redirect(`/project/${projectId}`)
+  }
+
+  redirect(checkpointUrl(projectId, definition.id))
+}
+
+/**
+ * The one place a project moves forward.
+ *
+ * Guardrail 3's strongest form. Every forward transition in the workflow ends up
+ * here, behind a screen the researcher has been shown, and behind a button they
+ * pressed on that screen. There is no other writer of a forward state change.
+ *
+ * The project's own state decides which checkpoint this is. The posted id has to
+ * agree with it, and is otherwise treated as a stale form rather than as an
+ * instruction, which is what stops a back button and a second tab between them
+ * from skipping a stage.
+ *
+ * Blockers are recomputed here rather than trusted from the screen. A disabled
+ * button is an interface; this is the rule.
+ */
+export async function confirmCheckpoint(formData: FormData) {
+  const session = await getSession()
+  if (!session) redirect('/sign-in')
+
+  const projectId = String(formData.get('projectId') ?? '')
+  const requested = String(formData.get('checkpoint') ?? '')
+
+  const store = getStore()
+  const project = await store.getProject(projectId, session.userId)
+  if (!project) redirect('/dashboard')
+
+  const definition = checkpointFor(project.state)
+  if (!definition || definition.id !== requested) {
+    redirect(`/project/${projectId}`)
+  }
+
+  const answers = await store.getAnswers(projectId)
+  const interpretations =
+    definition.from === 'method_check' ? await store.listInterpretations(projectId) : []
+  const drafts = definition.from === 'draft' ? await store.listDrafts(projectId) : []
+
+  const summary = buildCheckpoint({ project, answers, interpretations, drafts })
+  if (summary && summary.blockers.length > 0) {
+    redirect(checkpointUrl(projectId, definition.id))
+  }
+
+  // Built from the answers as they now stand, replacing any set from a previous
+  // round that the researcher sent back. Model-reasoned where the model is
+  // available, rule-derived where it is not: `interpretMethodology` decides, and
+  // `modelVersion` records which of the two the researcher was shown.
+  if (definition.to === 'method_check') {
+    await store.replaceInterpretations(
+      projectId,
+      await interpretMethodology({ project, answers, userId: session.userId }),
+    )
+  }
+
   const reason =
-    to === 'gap_analysis'
-      ? 'Researcher moved to gap analysis'
-      : 'Researcher marked the draft ready to review'
+    `Confirmed at the checkpoint between ${STATE_DEFINITIONS[definition.from].label} ` +
+    `and ${STATE_DEFINITIONS[definition.to].label}`
 
   assertValidTransition({
     projectId,
     from: project.state,
-    to,
+    to: definition.to,
     actorId: session.userId,
     reason,
   })
@@ -420,11 +439,11 @@ export async function advanceWorkflow(formData: FormData) {
   await store.recordTransition({
     projectId,
     from: project.state,
-    to,
+    to: definition.to,
     actorId: session.userId,
     reason,
   })
-  await store.updateProject(projectId, session.userId, { state: to })
+  await store.updateProject(projectId, session.userId, { state: definition.to })
 
   redirect(`/project/${projectId}`)
 }
