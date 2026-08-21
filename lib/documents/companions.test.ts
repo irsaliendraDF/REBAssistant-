@@ -101,6 +101,29 @@ describe('what the answers point at', () => {
     expect(ids(documents)).not.toContain('focus_group_guide')
     expect(ids(documents)).not.toContain('observation_protocol')
   })
+
+  it('does not read a method out of an answer that only mentions one in passing', () => {
+    const documents = suggestCompanionDocuments(project(), {
+      ...INTERVIEW_STUDY,
+      'intake.2_6.analysis':
+        'Thematic analysis of transcripts. Unlike a survey, interviews let us follow up on an answer.',
+      'intake.2_9.risks':
+        'Some fatigue, of the kind people report after a long questionnaire, though this study runs none.',
+    })
+
+    expect(ids(documents)).not.toContain('survey_instrument')
+    expect(ids(documents)).toContain('interview_guide')
+  })
+
+  it('still reads the subject matter out of the wider answers', () => {
+    const documents = suggestCompanionDocuments(project(), {
+      ...INTERVIEW_STUDY,
+      'intake.2_9.risks':
+        'Talking about a home someone lost can bring up grief, and some participants have been through a bereavement.',
+    })
+
+    expect(ids(documents)).toContain('debriefing')
+  })
 })
 
 describe('documents that follow from a single answer', () => {

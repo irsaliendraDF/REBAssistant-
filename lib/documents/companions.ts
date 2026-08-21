@@ -90,20 +90,36 @@ const TEMPLATES = {
 // Reading the answers
 // ---------------------------------------------------------------------------
 
-/** The free text most likely to describe what participants actually do. */
+/**
+ * Where an instrument is looked for: the answers that describe what a
+ * participant actually does.
+ *
+ * Deliberately narrow. Reading the risks and the analysis as well found the word
+ * "survey" in a sentence like "unlike a survey, interviews let us follow up",
+ * and put a survey instrument on the list of documents the Board expects. A
+ * false positive on a required document is worse than a miss: it sends someone
+ * off to write a thing nobody asked for, and it teaches them the list is
+ * guesswork.
+ */
 const METHOD_KEYS = [
   'triage.plain_summary',
   'intake.2_2.question',
-  'intake.2_2.objectives',
   'intake.2_4.how',
-  'intake.2_4.screening',
   'intake.2_6.what_happens',
+]
+
+/** Wider, for reading the subject matter rather than the method. */
+const CONTEXT_KEYS = [
+  ...METHOD_KEYS,
+  'intake.2_2.objectives',
+  'intake.2_3.who',
   'intake.2_6.analysis',
   'intake.2_9.risks',
 ]
 
-function haystack(answers: AnswerMap): string {
-  return METHOD_KEYS.map((key) => answers[key] ?? '')
+function join(answers: AnswerMap, keys: string[]): string {
+  return keys
+    .map((key) => answers[key] ?? '')
     .join('\n')
     .toLowerCase()
 }
@@ -137,7 +153,8 @@ export function suggestCompanionDocuments(
   project: Project,
   answers: AnswerMap,
 ): CompanionDocument[] {
-  const text = haystack(answers)
+  const methods = join(answers, METHOD_KEYS)
+  const context = join(answers, CONTEXT_KEYS)
   const flagged = project.involvesIndigenousResearch || project.involvesCommunityEngagedResearch
   const dataSource = answers['triage.data_source']
   const collectsDirectly = dataSource === 'direct' || dataSource === 'both'
@@ -294,7 +311,7 @@ export function suggestCompanionDocuments(
 
   // -- Instruments ---------------------------------------------------------
 
-  if (PATTERNS.survey.test(text) || answers['intake.2_5.how'] === 'implied') {
+  if (PATTERNS.survey.test(methods) || answers['intake.2_5.how'] === 'implied') {
     documents.push({
       id: 'survey_instrument',
       title: 'The survey or questionnaire itself',
@@ -314,8 +331,8 @@ export function suggestCompanionDocuments(
     })
   }
 
-  if (PATTERNS.interview.test(text) || PATTERNS.keyInformant.test(text)) {
-    const keyInformant = PATTERNS.keyInformant.test(text)
+  if (PATTERNS.interview.test(methods) || PATTERNS.keyInformant.test(methods)) {
+    const keyInformant = PATTERNS.keyInformant.test(methods)
     documents.push({
       id: 'interview_guide',
       title: keyInformant ? 'Key informant interview guide' : 'Interview guide',
@@ -339,7 +356,7 @@ export function suggestCompanionDocuments(
     })
   }
 
-  if (PATTERNS.focusGroup.test(text)) {
+  if (PATTERNS.focusGroup.test(methods)) {
     documents.push({
       id: 'focus_group_guide',
       title: 'Focus group guide and ground rules',
@@ -358,7 +375,7 @@ export function suggestCompanionDocuments(
     })
   }
 
-  if (PATTERNS.observation.test(text)) {
+  if (PATTERNS.observation.test(methods)) {
     documents.push({
       id: 'observation_protocol',
       title: 'Observation protocol',
@@ -377,7 +394,7 @@ export function suggestCompanionDocuments(
     })
   }
 
-  if (PATTERNS.visualMedia.test(text)) {
+  if (PATTERNS.visualMedia.test(methods)) {
     documents.push({
       id: 'visual_media_consent',
       title: 'Instructions and a separate consent for photographs, video or diaries',
@@ -462,12 +479,12 @@ export function suggestCompanionDocuments(
 
   // -- After participation -------------------------------------------------
 
-  if (PATTERNS.distress.test(text) || saidYesOrUnsure(answers, 'intake.2_3.dependence')) {
+  if (PATTERNS.distress.test(context) || saidYesOrUnsure(answers, 'intake.2_3.dependence')) {
     documents.push({
       id: 'debriefing',
       title: 'Debriefing sheet and list of support resources',
       necessity: 'likely',
-      why: PATTERNS.distress.test(text)
+      why: PATTERNS.distress.test(context)
         ? 'The risks or subject matter you described could leave someone distressed, and the Board looks for what a participant is handed afterwards.'
         : 'Where participants may be in a position of dependence, the Board looks for what they are handed after taking part.',
       appendix: 'Debriefing or study results templates',

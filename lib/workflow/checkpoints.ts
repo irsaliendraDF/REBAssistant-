@@ -1,5 +1,5 @@
 import type { AnswerMap, Draft, MethodInterpretation, Project } from '@/lib/data/types'
-import { SECTIONS_BY_NUMBER, countWords, wordLimitFor } from '@/lib/form/dalhousie-sections'
+import { countWords, wordLimitFor } from '@/lib/form/dalhousie-sections'
 import { analyseGaps, countBySeverity } from '@/lib/gaps/analyse'
 import {
   TRIAGE_QUESTIONS,
@@ -413,10 +413,11 @@ function draftCheckpoint(project: Project, answers: AnswerMap, drafts: Draft[]):
 
 function describeSections(numbers: string[]): string {
   if (numbers.length === 0) return 'None'
+  // Every section is listed, including one the form structure does not know
+  // about. Dropping it would be this line quietly under-reporting what a model
+  // wrote, which is the one thing the disclosure cannot afford.
   const unique = [...new Set(numbers)].sort(compareSectionNumbers)
-  const named = unique.filter((number) => SECTIONS_BY_NUMBER[number] !== undefined)
-  const list = named.length > 0 ? named : unique
-  return `${list.length} section${list.length === 1 ? '' : 's'}: ${list.join(', ')}`
+  return `${unique.length} section${unique.length === 1 ? '' : 's'}: ${unique.join(', ')}`
 }
 
 /** '2.10' sorts after '2.9', which a string comparison gets backwards. */
