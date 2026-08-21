@@ -5,6 +5,7 @@ import type { AnswerMap, Draft, MethodInterpretation, Project } from '@/lib/data
 import {
   CHECKPOINTS,
   buildCheckpoint,
+  buildSectionCheckpoint,
   checkpointFor,
   isCheckpointFor,
   type CheckpointId,
@@ -305,7 +306,111 @@ describe('the last checkpoint', () => {
   })
 })
 
+/**
+ * The smaller checkpoint, between two sections of intake.
+ */
+describe('a section checkpoint', () => {
+  const INTAKE: AnswerMap = {
+    ...TRIAGE_ANSWERS,
+    'intake.2_4.third_party': 'yes',
+    'intake.2_4.how': 'Posters in community centres and an invitation from two energy co-operatives.',
+    'intake.2_4.screening': 'People decide for themselves whether they are eligible.',
+  }
+
+  it('reads every question in the section back, answered or not', () => {
+    const summary = buildSectionCheckpoint({
+      project: project({ state: 'intake' }),
+      answers: INTAKE,
+      formSection: '2.4',
+    })!
+
+    expect(summary.title).toBe('Recruitment')
+    expect(summary.captured).toHaveLength(4)
+    expect(summary.captured.some((item) => item.detail === 'Left blank')).toBe(true)
+  })
+
+  it('shows a choice in the words the researcher chose from', () => {
+    const summary = buildSectionCheckpoint({
+      project: project({ state: 'intake' }),
+      answers: INTAKE,
+      formSection: '2.4',
+    })!
+
+    expect(summary.captured[0].detail).toBe('Yes')
+  })
+
+  it('says what the answer commits them to, at the point they gave it', () => {
+    const summary = buildSectionCheckpoint({
+      project: project({ state: 'intake' }),
+      answers: INTAKE,
+      formSection: '2.4',
+    })!
+
+    expect(summary.notes.join(' ')).toContain('written agreement appended')
+  })
+
+  it('surfaces a contradiction here rather than three stages later', () => {
+    const summary = buildSectionCheckpoint({
+      project: project({ state: 'intake' }),
+      answers: {
+        ...INTAKE,
+        'intake.2_6.recording': 'yes',
+        'intake.2_7.identifiability': 'anonymous',
+        'intake.2_7.storage': 'On an encrypted university drive.',
+        'intake.2_7.retention': 'Five years, then deleted.',
+        'intake.2_7.outside_canada': 'no',
+        'intake.2_7.health_information': 'no',
+      },
+      formSection: '2.7',
+    })!
+
+    expect(summary.notes.join(' ')).toContain('A voice or video recording is identifiable')
+  })
+
+  it('names the section it goes to next', () => {
+    const summary = buildSectionCheckpoint({
+      project: project({ state: 'intake' }),
+      answers: INTAKE,
+      formSection: '2.4',
+    })!
+
+    expect(summary.next?.formSection).toBe('2.5')
+  })
+
+  it('has no next section at the end of intake', () => {
+    const summary = buildSectionCheckpoint({
+      project: project({ state: 'intake' }),
+      answers: INTAKE,
+      formSection: '2.12',
+    })!
+
+    expect(summary.next).toBeNull()
+  })
+
+  it('blocks while a required question in the section is unanswered', () => {
+    const summary = buildSectionCheckpoint({
+      project: project({ state: 'intake' }),
+      answers: TRIAGE_ANSWERS,
+      formSection: '2.2',
+    })!
+
+    expect(summary.blockers).toHaveLength(1)
+  })
+
+  it('builds nothing for a section this application does not have', () => {
+    expect(
+      buildSectionCheckpoint({
+        project: project({ state: 'intake' }),
+        answers: INTAKE,
+        // Only shown when the research involves an intervention.
+        formSection: '2.14',
+      }),
+    ).toBeNull()
+  })
+})
+
 describe('no checkpoint at the end', () => {
+
   it('builds nothing for a completed project', () => {
     expect(buildCheckpoint({ project: project({ state: 'complete' }), answers: {} })).toBeNull()
   })

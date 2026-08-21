@@ -8,6 +8,7 @@ import { GapAnalysisStep } from '@/components/gap-analysis-step'
 import { IntakeStep } from '@/components/intake-step'
 import { MethodCheckStep } from '@/components/method-check-step'
 import { ParticipantDisclosure } from '@/components/participant-disclosure'
+import { SectionCheckpointStep } from '@/components/section-checkpoint-step'
 import { TombstoneReuseStep } from '@/components/tombstone-reuse-step'
 import { TriageStep } from '@/components/triage-step'
 import { WorkflowProgress } from '@/components/workflow-progress'
@@ -24,7 +25,11 @@ import { isAnthropicConfigured } from '@/lib/env'
 import { analyseGaps, type GapSeverity } from '@/lib/gaps/analyse'
 import { visibleSections } from '@/lib/intake/questions'
 import { displayTitle } from '@/lib/text'
-import { buildCheckpoint, isCheckpointFor } from '@/lib/workflow/checkpoints'
+import {
+  buildCheckpoint,
+  buildSectionCheckpoint,
+  isCheckpointFor,
+} from '@/lib/workflow/checkpoints'
 import { STATE_DEFINITIONS, canGoBack, previousState } from '@/lib/workflow/states'
 
 import { stepBack } from './actions'
@@ -80,9 +85,16 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
   // A checkpoint sits between two stages, so it is a view of the state the
   // project is in rather than a state of its own. The parameter asks for it; the
   // project's own state decides whether that is the checkpoint it is at.
+  const requestedCheckpoint = readOne(search.checkpoint)
   const checkpoint =
-    isCheckpointFor(project.state, readOne(search.checkpoint)) && !needsReuseDecision
+    isCheckpointFor(project.state, requestedCheckpoint) && !needsReuseDecision
       ? buildCheckpoint({ project, answers, interpretations, drafts })
+      : null
+
+  // The smaller one, between two sections of intake. Same idea, one level down.
+  const sectionCheckpoint =
+    requestedCheckpoint === 'section' && project.state === 'intake' && current
+      ? buildSectionCheckpoint({ project, answers, formSection: current.formSection })
       : null
 
   // Only at the end, where there is enough on record to name the documents
@@ -110,12 +122,15 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
         </p>
       </div>
 
-      <WorkflowProgress current={project.state} />
+      <WorkflowProgress
+        current={project.state}
+        atCheckpoint={Boolean(checkpoint || sectionCheckpoint)}
+      />
 
       {/* One consistent place on every step, rather than a different affordance
           per screen. Hidden during the reuse decision, which has to be answered
           before the application has a step to return to. */}
-      {canGoBack(project.state) && !needsReuseDecision && !checkpoint ? (
+      {canGoBack(project.state) && !needsReuseDecision && !checkpoint && !sectionCheckpoint ? (
         <form action={stepBack}>
           <input type="hidden" name="projectId" value={project.id} />
           <BackButton>
@@ -178,6 +193,13 @@ export default async function ProjectPage(props: PageProps<'/project/[id]'>) {
         <TombstoneReuseStep projectId={project.id} profile={profile} />
       ) : checkpoint ? (
         <CheckpointStep projectId={project.id} summary={checkpoint} />
+      ) : sectionCheckpoint ? (
+        <SectionCheckpointStep
+          projectId={project.id}
+          sections={sections}
+          answers={answers}
+          summary={sectionCheckpoint}
+        />
       ) : project.state === 'triage' ? (
         <TriageStep projectId={project.id} answers={answers} missing={missing} />
       ) : project.state === 'method_check' ? (

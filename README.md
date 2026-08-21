@@ -100,6 +100,10 @@ Built:
   with what confirming will start. Confirming at a checkpoint is the only way a
   project moves forward
 
+- A smaller checkpoint between each intake section and the next: the answers as
+  given, what that section turned on, and anything the gap rules already know
+  about it, with the section list still on the left
+
 - Companion documents: at the end of the workflow, the consent forms,
   instruments, permission letters and agreements this study's own answers point
   at, each with what it has to contain and the Dalhousie template that covers it

@@ -17,8 +17,19 @@ import {
  * The fill reaches a step's marker when the project has entered that step, not
  * when it has finished it. `complete` is the last state, so a completed
  * application fills the track.
+ *
+ * A checkpoint is not a seventh step and does not get a marker. It is drawn as a
+ * pause on the step being left, because that is what it is: the project is still
+ * in that state until the researcher confirms.
  */
-export function WorkflowProgress({ current }: { current?: ProjectState }) {
+export function WorkflowProgress({
+  current,
+  atCheckpoint,
+}: {
+  current?: ProjectState
+  /** True while the researcher is at a checkpoint on the way out of `current`. */
+  atCheckpoint?: boolean
+}) {
   const currentIndex = current ? stateIndex(current) : -1
   const fillPercent = progressPercent(current)
 
@@ -68,7 +79,18 @@ export function WorkflowProgress({ current }: { current?: ProjectState }) {
                       : 'border-line bg-white text-faint',
                 ].join(' ')}
               >
-                {isComplete ? (
+                {isCurrent && atCheckpoint ? (
+                  <svg
+                    viewBox="0 0 16 16"
+                    className="h-3 w-3"
+                    fill="currentColor"
+                    role="img"
+                    aria-label="At a checkpoint"
+                  >
+                    <rect x="3.5" y="2.5" width="3" height="11" rx="1" />
+                    <rect x="9.5" y="2.5" width="3" height="11" rx="1" />
+                  </svg>
+                ) : isComplete ? (
                   <svg
                     viewBox="0 0 16 16"
                     className="h-3.5 w-3.5"
@@ -94,6 +116,12 @@ export function WorkflowProgress({ current }: { current?: ProjectState }) {
               >
                 {definition.label}
               </span>
+
+              {isCurrent && atCheckpoint ? (
+                <span className="text-[10px] font-medium uppercase tracking-wide text-forest">
+                  Checkpoint
+                </span>
+              ) : null}
             </li>
           )
         })}

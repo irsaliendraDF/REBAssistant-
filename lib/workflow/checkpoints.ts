@@ -6,6 +6,8 @@ import {
   allQuestions,
   missingRequired,
   visibleSections,
+  type IntakeSection,
+  type Question,
 } from '@/lib/intake/questions'
 
 import { STATE_DEFINITIONS, type ProjectState } from './states'
@@ -456,6 +458,159 @@ function gapCheckpoint(project: Project, answers: AnswerMap): CheckpointBody {
 
   return { captured, notes, blockers: [] }
 }
+
+// ---------------------------------------------------------------------------
+// Between one intake section and the next
+// ---------------------------------------------------------------------------
+
+/**
+ * The smaller checkpoint, inside intake.
+ *
+ * Intake is nine or more sections down the left-hand list, and a researcher
+ * works through it over weeks. The stage checkpoint at the end of all of them is
+ * too late to be the only stop: by then a contradiction between section 2.6 and
+ * section 2.7 is three weeks old and reads as someone else's mistake.
+ *
+ * So each section ends with its own read-back. The answers are shown as given,
+ * with what this section just turned on, and with anything the gap rules already
+ * know about it. Nothing new is invented here: the findings come from
+ * `analyseGaps`, tagged to this section, rather than from a second copy of the
+ * same rules that would drift from the first.
+ *
+ * This one moves no state. Sections are a route within intake, so confirming
+ * goes to the next section, and the last one hands over to the stage checkpoint.
+ */
+export interface SectionCheckpointSummary {
+  formSection: string
+  title: string
+  /** Where confirming goes. Null on the last section, which ends the stage. */
+  next: { formSection: string; title: string } | null
+  captured: CheckpointItem[]
+  notes: string[]
+  blockers: string[]
+}
+
+export interface SectionCheckpointInput {
+  project: Project
+  answers: AnswerMap
+  formSection: string
+}
+
+export function buildSectionCheckpoint({
+  project,
+  answers,
+  formSection,
+}: SectionCheckpointInput): SectionCheckpointSummary | null {
+  const sections = visibleSections(answers)
+  const index = sections.findIndex((section) => section.formSection === formSection)
+  const section = sections[index]
+  if (!section) return null
+
+  const next = sections[index + 1]
+  const missing = missingRequired(section.questions, answers)
+
+  return {
+    formSection: section.formSection,
+    title: section.title,
+    next: next ? { formSection: next.formSection, title: next.title } : null,
+    captured: section.questions.map((question) => capturedAnswer(question, answers)),
+    notes: sectionNotes(project, answers, section),
+    blockers:
+      missing.length > 0
+        ? [
+            `${
+              missing.length === 1 ? 'A required question' : `${missing.length} required questions`
+            } in this section still need an answer.`,
+          ]
+        : [],
+  }
+}
+
+function capturedAnswer(question: Question, answers: AnswerMap): CheckpointItem {
+  const answer = (answers[question.key] ?? '').trim()
+
+  if (answer.length === 0) {
+    return {
+      label: question.label,
+      detail: 'Left blank',
+      note: question.required ? 'This one is required.' : 'Optional, and not answered.',
+      formSection: question.formSection,
+    }
+  }
+
+  return {
+    label: question.label,
+    // Choices read back in the words the researcher chose from, never as the
+    // stored value: "Coded, with a key held separately", not "coded".
+    detail: question.options?.find((option) => option.value === answer)?.label ?? answer,
+    formSection: question.formSection,
+  }
+}
+
+function sectionNotes(project: Project, answers: AnswerMap, section: IntakeSection): string[] {
+  const notes: string[] = []
+
+  // What this section just turned on. These are the consequences a researcher
+  // cannot see from the answer itself, and they are worth saying at the moment
+  // the answer is given rather than at the end of intake.
+  for (const [key, value, note] of CONSEQUENCES) {
+    if (!section.questions.some((question) => question.key === key)) continue
+    const answer = answers[key]
+    if (value === 'yes_or_unsure' ? answer === 'yes' || answer === 'unsure' : answer === value) {
+      notes.push(note)
+    }
+  }
+
+  // Everything the gap rules already know about this section. Reused rather than
+  // restated: one set of rules, surfaced early here and again at gap analysis.
+  for (const finding of analyseGaps(project, answers)) {
+    if (finding.formSection !== section.formSection) continue
+    if (finding.severity === 'missing') continue
+    notes.push(finding.finding)
+  }
+
+  const blank = section.questions.filter(
+    (question) => !question.required && (answers[question.key] ?? '').trim().length === 0,
+  )
+  if (blank.length > 0) {
+    notes.push(
+      `${
+        blank.length === 1 ? 'One optional question was' : `${blank.length} optional questions were`
+      } left blank. Optional in this tool means the workflow will not stop for it, which is not the same as optional to the Board.`,
+    )
+  }
+
+  return notes
+}
+
+/** Answer, and what it commits the researcher to. */
+const CONSEQUENCES: [key: string, value: string, note: string][] = [
+  [
+    'intake.2_4.third_party',
+    'yes_or_unsure',
+    'Because someone outside the research team is involved in reaching participants, the Board needs their written agreement appended before it will review your submission. That letter takes longer to get than it does to write, so it is worth asking now rather than at the end.',
+  ],
+  [
+    'intake.2_5.how',
+    'implied',
+    'Consent implied by completing a survey means the page participants read before they start is the consent document. It carries everything a signed form would.',
+  ],
+  [
+    'intake.2_5.future_use',
+    'yes',
+    'Keeping the data for future research opens section 2.8, and TCPS 2 Article 3.13 asks participants to consent to it separately. Someone who says no must still be able to take part.',
+  ],
+  [
+    'intake.2_6.intervention',
+    'yes',
+    'A health intervention or procedure opens the clinical trials section, and points this application at the Health Sciences Board rather than Social Sciences and Humanities.',
+  ],
+  [
+    'intake.2_7.health_information',
+    'yes',
+    'Handling personal health information opens section 2.15, and may bring this research under Nova Scotia’s Personal Health Information Act.',
+  ],
+]
 
 // ---------------------------------------------------------------------------
 

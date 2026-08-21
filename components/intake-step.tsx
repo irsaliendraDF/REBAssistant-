@@ -1,9 +1,10 @@
 import Link from 'next/link'
 
 import { saveIntakeSection } from '@/app/project/[id]/actions'
+import { IntakeSectionNav } from '@/components/intake-section-nav'
 import { QuestionField } from '@/components/question-field'
 import type { AnswerMap } from '@/lib/data/types'
-import { missingRequired, type IntakeSection } from '@/lib/intake/questions'
+import type { IntakeSection } from '@/lib/intake/questions'
 
 /**
  * Step 2. The guided question sequence, one form section at a time.
@@ -11,6 +12,9 @@ import { missingRequired, type IntakeSection } from '@/lib/intake/questions'
  * Sections are the form's own, so an answer never has to be reassigned later.
  * The side list shows which are done, which is the only honest way to answer
  * "how much of this is left" for a form this long.
+ *
+ * Finishing a section does not go straight to the next one. It goes to that
+ * section's checkpoint, which reads the answers back before moving on.
  */
 export function IntakeStep({
   projectId,
@@ -31,64 +35,12 @@ export function IntakeStep({
 
   return (
     <div className="grid gap-8 lg:grid-cols-[220px_1fr]">
-      <nav aria-label="Application sections" className="lg:pt-1">
-        <p className="mb-3 text-xs font-medium uppercase tracking-wide text-muted">
-          Sections
-        </p>
-        <ol className="space-y-1">
-          {sections.map((section) => {
-            // A section counts as done only once it has been answered. Testing
-            // required questions alone marked "Conflict of interest" complete
-            // before the researcher had seen it, because every question in it is
-            // optional.
-            const touched = section.questions.some(
-              (question) => (answers[question.key] ?? '').trim().length > 0,
-            )
-            const done = touched && missingRequired(section.questions, answers).length === 0
-            const isCurrent = section.formSection === current.formSection
-
-            return (
-              <li key={section.formSection}>
-                <Link
-                  href={`/project/${projectId}?section=${encodeURIComponent(section.formSection)}`}
-                  aria-current={isCurrent ? 'page' : undefined}
-                  className={[
-                    'flex items-start gap-2 rounded-md px-2 py-1.5 text-xs leading-snug transition',
-                    isCurrent
-                      ? 'bg-forest text-white'
-                      : 'text-muted hover:bg-surface-2 hover:text-ink',
-                  ].join(' ')}
-                >
-                  <span
-                    className={[
-                      'font-mono text-[10px]',
-                      isCurrent ? 'text-lime-soft' : 'text-faint',
-                    ].join(' ')}
-                  >
-                    {section.formSection}
-                  </span>
-                  <span className="flex-1">{section.title}</span>
-                  {done && !isCurrent ? (
-                    <svg
-                      viewBox="0 0 16 16"
-                      className="mt-0.5 h-3.5 w-3.5 shrink-0 text-forest"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      role="img"
-                      aria-label="Complete"
-                    >
-                      <path d="M3 8.5 6.5 12 13 4.5" />
-                    </svg>
-                  ) : null}
-                </Link>
-              </li>
-            )
-          })}
-        </ol>
-      </nav>
+      <IntakeSectionNav
+        projectId={projectId}
+        sections={sections}
+        current={current.formSection}
+        answers={answers}
+      />
 
       <form action={saveIntakeSection} className="space-y-8">
         <input type="hidden" name="projectId" value={projectId} />

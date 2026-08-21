@@ -153,19 +153,58 @@ export async function saveIntakeSection(formData: FormData) {
     redirect(`${here}&missing=${encodeURIComponent(missing.join(','))}`)
   }
 
+  // The section's own checkpoint, not the next section. Nine sections filled in
+  // over three weeks is exactly the shape of work where an answer given in one
+  // week contradicts one given in another, and the end of intake is too late to
+  // be the only place that gets noticed.
+  redirect(`${here}&checkpoint=section`)
+}
+
+/**
+ * Leaves one intake section for the next, at the researcher's word.
+ *
+ * No state moves here: sections are a route within intake, not stages. What this
+ * does enforce is that the section was actually finished, recomputed from stored
+ * answers rather than taken from the screen, and that the next section is
+ * whichever one applies now.
+ */
+export async function confirmSectionCheckpoint(formData: FormData) {
+  const session = await getSession()
+  if (!session) redirect('/sign-in')
+
+  const projectId = String(formData.get('projectId') ?? '')
+  const formSection = String(formData.get('formSection') ?? '')
+
+  const store = getStore()
+  const project = await store.getProject(projectId, session.userId)
+  if (!project) redirect('/dashboard')
+  if (project.state !== 'intake') redirect(`/project/${projectId}`)
+
+  const answers = await store.getAnswers(projectId)
+
   // Answering this section may have revealed or hidden a later one, for example
   // the clinical trials section, so the list is recomputed rather than reused.
-  const updated = visibleSections({ ...existing, ...answers })
-  const position = updated.findIndex((entry) => entry.formSection === section.formSection)
-  const next = updated[position + 1]
+  const sections = visibleSections(answers)
+  const index = sections.findIndex((entry) => entry.formSection === formSection)
+  const section = sections[index]
+  if (!section) redirect(`/project/${projectId}`)
 
+  const missing = missingRequired(section.questions, answers)
+  if (missing.length > 0) {
+    redirect(
+      `/project/${projectId}?section=${encodeURIComponent(section.formSection)}` +
+        `&missing=${encodeURIComponent(missing.join(','))}`,
+    )
+  }
+
+  const next = sections[index + 1]
   if (next) {
     redirect(`/project/${projectId}?section=${encodeURIComponent(next.formSection)}`)
   }
 
-  // The checkpoint. Building the readings is a model call, so it belongs after
-  // the researcher has confirmed that intake says what they meant it to say,
-  // not before.
+  // The last section hands over to the stage checkpoint. Building the readings
+  // is a model call, so it belongs after the researcher has confirmed that
+  // intake as a whole says what they meant it to say.
   redirect(checkpointUrl(projectId, 'intake'))
 }
 

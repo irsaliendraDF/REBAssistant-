@@ -167,6 +167,25 @@ Blockers on a checkpoint are recomputed on the server when the researcher
 confirms, rather than trusted from the screen. A disabled button is an interface,
 not a rule, and two tabs are enough to prove the difference.
 
+**Intake sections have their own, smaller checkpoint.** The stage checkpoint at
+the end of intake is nine sections and often three weeks after the first answer,
+which is too late to be the only stop. Each section now ends with its own
+read-back: the answers as given, what that section just turned on, and anything
+the gap rules already know about it.
+
+Those findings come from `analyseGaps`, filtered to the section, rather than from
+a second copy of the same rules. One set of rules, surfaced early here and again
+at gap analysis, is the only version of this that cannot drift. What is written
+out in `checkpoints.ts` is only what gap analysis has no rule for: the
+consequences of an answer, such as a third party meaning the Board needs their
+letter appended before it will review anything.
+
+A section checkpoint moves no state, because sections are a route within intake
+rather than stages. It renders in the intake layout with the section list still
+on the left, so it reads as a pause inside intake rather than as a different
+screen, and the progress track draws the current step as paused rather than
+growing a seventh marker.
+
 **Building the method readings moved to the checkpoint, not the end of intake.**
 It is the one model call the workflow makes on the researcher's behalf, and it
 now happens after they have confirmed that intake says what they meant it to say.
