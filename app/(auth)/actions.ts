@@ -15,6 +15,13 @@ import { createClient } from '@/lib/supabase/server'
  * assumption 1). No Google or other social sign-in: one identity per researcher,
  * so their saved details are reused rather than fragmented across two accounts
  * they did not realise were different.
+ *
+ * The same email carries a six-digit code, and `signInWithCode` below accepts
+ * it. That is not a nicety. A link is a single-use URL sitting in a university
+ * mailbox: Microsoft 365, which Dalhousie runs, opens links in mail to check
+ * them, and a link that has been opened once is spent. A typed code cannot be
+ * spent by something that reads the message, and it works on a phone when the
+ * link was asked for on a laptop, which the link itself cannot.
  */
 export async function signInWithMagicLink(formData: FormData) {
   const email = String(formData.get('email') ?? '')
@@ -51,6 +58,46 @@ export async function signInWithMagicLink(formData: FormData) {
   }
 
   redirect(`/sign-in?sent=${encodeURIComponent(email)}`)
+}
+
+/**
+ * The six-digit code from the same email, typed in.
+ *
+ * Two types are tried. A researcher signing in for the first time gets the
+ * confirm-signup email, whose code Supabase types as `signup`; everyone else
+ * gets the magic link email, typed `email`. Which one an address is on is not
+ * something the sign-in screen knows, and asking would be a strange question, so
+ * the wrong guess is simply retried. A failed verification does not spend the
+ * code.
+ */
+export async function signInWithCode(formData: FormData) {
+  const email = String(formData.get('email') ?? '')
+    .trim()
+    .toLowerCase()
+  const code = String(formData.get('code') ?? '').replace(/[\s-]/g, '')
+
+  const back = `/sign-in?sent=${encodeURIComponent(email)}`
+
+  if (!email.includes('@')) {
+    redirect('/sign-in?error=invalid_email')
+  }
+  if (!/^\d{6}$/.test(code)) {
+    redirect(`${back}&error=invalid_code`)
+  }
+
+  const supabase = await createClient()
+  if (!supabase) {
+    redirect('/sign-in?error=auth_not_configured')
+  }
+
+  for (const type of ['email', 'signup'] as const) {
+    const { error } = await supabase.auth.verifyOtp({ email, token: code, type })
+    if (!error) {
+      redirect('/dashboard')
+    }
+  }
+
+  redirect(`${back}&error=code_failed`)
 }
 
 /**
@@ -101,10 +148,47 @@ export async function signInAsTestResearcher(formData: FormData) {
 export async function signOut() {
   const supabase = await createClient()
   if (supabase) {
-    await supabase.auth.signOut()
+    try {
+      await supabase.auth.signOut()
+    } catch {
+      // Signing out of a session the server has already forgotten fails, and
+      // failing to sign out is not a reason to stay signed in. The cookies go
+      // either way.
+    }
   }
 
-  const cookieStore = await cookies()
-  cookieStore.delete(PLACEHOLDER_COOKIE)
+  await clearAuthCookies()
   redirect('/sign-in')
+}
+
+/**
+ * The way out of a stuck sign-in.
+ *
+ * A browser holding a session cookie the server will no longer accept is in a
+ * state nothing on the sign-in screen fixes, because signing out needs a session
+ * to sign out of. This deletes what is there and asks for nothing. It is the
+ * first thing to try when someone says they cannot get in on a computer where
+ * they used to be able to.
+ */
+export async function clearSession() {
+  await clearAuthCookies()
+  redirect('/sign-in?cleared=1')
+}
+
+/**
+ * Everything this app or Supabase may have set. Supabase splits a large session
+ * across several numbered cookies, so this matches on the prefix rather than
+ * naming them: missing one leaves a half-session behind, which reads to the
+ * client library as a corrupt one.
+ */
+async function clearAuthCookies() {
+  const cookieStore = await cookies()
+
+  for (const cookie of cookieStore.getAll()) {
+    if (cookie.name.startsWith('sb-')) {
+      cookieStore.delete(cookie.name)
+    }
+  }
+
+  cookieStore.delete(PLACEHOLDER_COOKIE)
 }

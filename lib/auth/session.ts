@@ -59,9 +59,18 @@ export async function getSession(): Promise<Session | null> {
     const supabase = await createClient()
     if (!supabase) return null
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    // A refresh token Supabase will not accept, or Supabase being briefly
+    // unreachable, throws here. Neither is a reason to return a 500 from every
+    // page at once: no session is a state the app already handles, and it ends
+    // at the sign-in screen, which is where someone in this position needs to
+    // be. `proxy.ts` is what keeps a live session from reaching this branch.
+    let user
+    try {
+      const result = await supabase.auth.getUser()
+      user = result.data.user
+    } catch {
+      return null
+    }
     if (!user) return null
 
     return {

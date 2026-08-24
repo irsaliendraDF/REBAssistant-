@@ -1,23 +1,15 @@
 import { redirect } from 'next/navigation'
 
+import { signInMessage } from '@/lib/auth/messages'
 import { getSession } from '@/lib/auth/session'
 import { env, isSupabaseConfigured } from '@/lib/env'
 
-import { signInAsTestResearcher, signInWithMagicLink } from '../actions'
+import { clearSession, signInAsTestResearcher, signInWithCode, signInWithMagicLink } from '../actions'
 
 export const metadata = {
   title: 'Sign in | Research Ethics Board Assistant',
 }
 
-const ERRORS: Record<string, string> = {
-  invalid_email: 'That does not look like an email address. Please check it and try again.',
-  auth_not_configured: 'Sign-in is not connected yet. Please try again shortly.',
-  rate_limited:
-    'Too many sign-in emails have been sent recently. Please wait a few minutes and try again.',
-  send_failed: 'The sign-in email could not be sent. Please try again in a moment.',
-  missing_code: 'That sign-in link was incomplete. Please request a new one.',
-  exchange_failed: 'That sign-in link has expired or has already been used. Please request a new one.',
-}
 
 export default async function SignInPage(props: PageProps<'/sign-in'>) {
   const search = await props.searchParams
@@ -28,7 +20,11 @@ export default async function SignInPage(props: PageProps<'/sign-in'>) {
   }
 
   const sentTo = readOne(search.sent)
-  const error = ERRORS[readOne(search.error) ?? '']
+  const error = signInMessage(readOne(search.error))
+  const cleared = search.cleared === '1'
+  // Offered only where it is the likely fix: a session this browser is holding
+  // that the server will not accept. On a clean sign-in screen it is noise.
+  const offersReset = Boolean(error) || cleared
   const usePlaceholder = env.app.usePlaceholderAuth && !isSupabaseConfigured
   const signInUnavailable = !usePlaceholder && !isSupabaseConfigured
 
@@ -51,6 +47,13 @@ export default async function SignInPage(props: PageProps<'/sign-in'>) {
         </p>
       ) : null}
 
+      {cleared ? (
+        <p className="mb-6 rounded-lg border border-line bg-surface px-4 py-3 text-sm leading-relaxed text-muted">
+          The sign-in data held in this browser has been cleared. Ask for a link below and start
+          again.
+        </p>
+      ) : null}
+
       {sentTo ? (
         <div className="rounded-lg border border-line bg-surface p-5">
           <p className="text-sm font-medium text-ink">Check Your Email</p>
@@ -59,12 +62,54 @@ export default async function SignInPage(props: PageProps<'/sign-in'>) {
             good for one use. If it does not arrive within a couple of minutes, check your junk
             folder before requesting another.
           </p>
-          <a
-            href="/sign-in"
-            className="mt-4 inline-block text-sm text-muted underline underline-offset-4"
-          >
-            Use a different email
-          </a>
+
+          {/* The link has to be opened in this browser, and a university mail
+              system may have opened it already by the time it arrives. The code
+              in the same email has neither problem, so it is offered here rather
+              than buried as a fallback for people who already gave up. */}
+          <form action={signInWithCode} className="mt-5 border-t border-line pt-5">
+            <input type="hidden" name="email" value={sentTo} />
+            <label htmlFor="code" className="block text-sm font-medium text-ink">
+              Or enter the six-digit code from that email
+            </label>
+            <p className="mt-1 text-xs leading-relaxed text-muted">
+              Use this if the link does not work, or if you are reading the email on a different
+              device from the one you are signing in on.
+            </p>
+            <div className="mt-3 flex gap-2">
+              <input
+                id="code"
+                name="code"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]*"
+                maxLength={7}
+                placeholder="123456"
+                className="w-32 rounded-md border border-line px-3 py-2 font-mono text-sm tracking-widest text-ink outline-none focus:border-forest"
+              />
+              <button
+                type="submit"
+                className="rounded-md bg-forest px-4 py-2 text-sm font-medium text-white transition hover:bg-forest-dark"
+              >
+                Sign In
+              </button>
+            </div>
+          </form>
+
+          <div className="mt-5 flex flex-wrap items-center gap-4 border-t border-line pt-4">
+            <a href="/sign-in" className="text-sm text-muted underline underline-offset-4">
+              Use a different email
+            </a>
+            <form action={signInWithMagicLink}>
+              <input type="hidden" name="email" value={sentTo} />
+              <button
+                type="submit"
+                className="text-sm text-muted underline underline-offset-4 hover:text-ink"
+              >
+                Send another link
+              </button>
+            </form>
+          </div>
         </div>
       ) : signInUnavailable ? (
         <div className="rounded-lg border border-line bg-surface p-4 text-sm text-muted">
@@ -118,6 +163,22 @@ export default async function SignInPage(props: PageProps<'/sign-in'>) {
           </form>
         </>
       )}
+
+      {offersReset && !usePlaceholder && isSupabaseConfigured ? (
+        <form action={clearSession} className="mt-8 border-t border-line pt-5">
+          <p className="text-xs leading-relaxed text-muted">
+            Still stuck on a computer where this used to work? Clearing the sign-in data held in
+            this browser resolves a session it can no longer use. It signs you out here and nowhere
+            else, and deletes none of your work.
+          </p>
+          <button
+            type="submit"
+            className="mt-3 text-sm text-muted underline underline-offset-4 hover:text-ink"
+          >
+            Clear sign-in data on this device
+          </button>
+        </form>
+      ) : null}
     </main>
   )
 }

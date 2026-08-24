@@ -35,6 +35,26 @@ Send yourself one afterwards to check it. The `{{ .ConfirmationURL }}`
 placeholder is filled in by Supabase; if you open these files directly in a
 browser you will see the placeholder text instead of a link, which is correct.
 
+## The six-digit code
+
+Both templates now show a code as well as a link, from the `{{ .Token }}`
+placeholder. **Re-paste both templates into the dashboard**, or the code will not
+appear in the mail people receive and the code box on the sign-in page will have
+nothing to accept.
+
+It is there because a link is fragile in a university mailbox in two ways that
+have nothing to do with the researcher:
+
+- A magic link completes only in the browser that asked for it. Open the email on
+  a phone after requesting the link on a laptop and it cannot work, however fast
+  you click. Shakara reported being unable to get in after signing in once; this
+  is one of the two things that produces that.
+- Microsoft 365, which Dalhousie runs, follows links in mail to check them. A
+  link that works once can be spent before anyone clicks it.
+
+A typed code has neither problem. The link stays first, because it is one click
+when it works.
+
 ## What these templates fix, and what they do not
 
 They fix the content signals: the tool is named, the message says why it arrived

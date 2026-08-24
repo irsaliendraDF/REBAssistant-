@@ -303,6 +303,53 @@ work out alone.
 
 ---
 
+## Sign-in
+
+**Session refresh runs in `proxy.ts`, and the app is broken without it.** A
+Supabase access token lasts an hour. Refreshing it rotates the refresh token, and
+the new one has to be written back to the researcher's cookies. A Server
+Component cannot write cookies, so `lib/supabase/server.ts` swallows those writes
+with a comment saying middleware handles it instead. No such file existed. The
+result was a session that worked for an hour and then could not be recovered,
+which is what Shakara hit after signing in once.
+
+In Next.js 16 the file is `proxy.ts`; `middleware.ts` is the same feature under
+its old, deprecated name. Supabase's own documentation still says middleware, so
+the two are worth reading together.
+
+**A failed `getUser()` signs the researcher out rather than returning a 500.**
+The token being unacceptable, or Supabase being briefly unreachable, used to
+throw out of `getSession()` and take every page with it. No session is a state
+the app already handles and it ends at the sign-in screen, which is where someone
+in that position needs to be.
+
+**Every sign-in failure gets its own sentence.** They used to collapse into "that
+link has expired or has already been used", which is true of one case out of
+three. The one worth separating is a link opened in a different browser from the
+one that asked for it: the proof of the request is a cookie in the original
+browser, so a link forwarded to a phone cannot complete, and telling that person
+to request another link is a loop they cannot get out of. The reasons live in
+`lib/auth/callback.ts` and the wording in `lib/auth/messages.ts`, with a test
+that every reason has something to say.
+
+**The email carries a six-digit code as well as a link.** Not a nicety: a link
+completes only in the browser that requested it, and Microsoft 365, which
+Dalhousie runs, follows links in mail to check them, which can spend a one-use
+link before the researcher clicks it. A typed code survives both. The link is
+still offered first because it is one click when it works.
+
+**The callback accepts a token hash as well as a code.** That is the link form
+that carries its own proof and therefore works on a second device. Accepting both
+means the email template can be switched in the dashboard without a code change,
+and switched back if it turns out worse.
+
+**Signing out clears the cookies even when signing out fails**, and there is a
+"clear sign-in data on this device" action on the sign-in screen. Signing out
+needs a session to sign out of, which is exactly what someone stuck with a
+session the server will not accept does not have.
+
+---
+
 ## Known provisional things
 
 **The intake question set is a first draft** for the client's research ethics

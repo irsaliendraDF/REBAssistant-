@@ -1,32 +1,54 @@
 import { NextResponse } from 'next/server'
 
+import {
+  exchangeFailureReason,
+  readCallbackParams,
+  signInUrl,
+} from '@/lib/auth/callback'
 import { createClient } from '@/lib/supabase/server'
 
 /**
  * Magic link callback.
  *
- * Wired now so the auth shape is settled, but inert until Supabase is
- * provisioned: with no client configured it redirects to sign-in with a clear
- * reason rather than failing obscurely.
+ * Two shapes of link arrive here, and both are accepted:
+ *
+ *   `?code=...`        the flow Supabase uses by default, which completes only
+ *                      in the browser that asked for the link, because the
+ *                      matching verifier is a cookie in that browser.
+ *   `?token_hash=...`  a link that carries its own proof, so it also works when
+ *                      the email is read on a phone or a second machine.
+ *
+ * Supabase also redirects here with `error` and `error_code` when a link is dead
+ * on arrival. Those used to fall through to "that link was incomplete", which
+ * told the researcher nothing they could act on.
+ *
+ * A route handler is one of the places cookies can be written, which is why the
+ * session set here sticks. Keeping it refreshed afterwards is `proxy.ts`.
  */
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
-  const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/dashboard'
+  const outcome = readCallbackParams(searchParams)
 
-  if (!code) {
-    return NextResponse.redirect(`${origin}/sign-in?error=missing_code`)
+  if (outcome.kind === 'failed') {
+    return NextResponse.redirect(signInUrl(origin, outcome.reason))
   }
 
   const supabase = await createClient()
   if (!supabase) {
-    return NextResponse.redirect(`${origin}/sign-in?error=auth_not_configured`)
+    return NextResponse.redirect(signInUrl(origin, 'auth_not_configured'))
   }
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code)
+  const { error } =
+    outcome.kind === 'token_hash'
+      ? await supabase.auth.verifyOtp({
+          type: outcome.type,
+          token_hash: outcome.tokenHash,
+        })
+      : await supabase.auth.exchangeCodeForSession(outcome.code)
+
   if (error) {
-    return NextResponse.redirect(`${origin}/sign-in?error=exchange_failed`)
+    return NextResponse.redirect(signInUrl(origin, exchangeFailureReason(error.message)))
   }
 
-  return NextResponse.redirect(`${origin}${next}`)
+  return NextResponse.redirect(`${origin}${outcome.next}`)
 }

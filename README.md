@@ -34,6 +34,7 @@ lib/
   kb/                 knowledge base ingestion, chunking, retrieval
   supabase/           browser, server and service-role clients
   workflow/           the state machine and the checkpoints between its stages
+proxy.ts              session refresh, the file Next 16 calls proxy and Supabase calls middleware
 supabase/migrations/  schema, version controlled, plain SQL
 knowledge-base/
   source/             source documents, gitignored
@@ -85,6 +86,9 @@ Built:
 - Knowledge base ingestion scan, hashing, content-hash de-duplication, chunking
   and the manifest
 - Placeholder auth boundary and an empty dashboard
+
+- Magic link sign-in with a six-digit code as an alternative, session refresh in
+  `proxy.ts`, and a separate message for each way a sign-in link can fail
 
 - Triage and intake: the guided question sequence, section by section, with the
   Indigenous and community-engaged flags routing the affected sections to a
