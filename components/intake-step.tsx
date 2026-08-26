@@ -1,5 +1,3 @@
-import Link from 'next/link'
-
 import { saveIntakeSection } from '@/app/project/[id]/actions'
 import { IntakeSectionNav } from '@/components/intake-section-nav'
 import { QuestionField } from '@/components/question-field'
@@ -34,17 +32,22 @@ export function IntakeStep({
   const previous = sections[index - 1]
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[220px_1fr]">
+    // The navigation lives inside the form on purpose. Every section in the list
+    // is a submit button, so moving to another one saves the current answers on
+    // the way out rather than discarding them.
+    <form action={saveIntakeSection} className="grid gap-8 lg:grid-cols-[220px_1fr]">
+      <input type="hidden" name="projectId" value={projectId} />
+      <input type="hidden" name="formSection" value={current.formSection} />
+
       <IntakeSectionNav
         projectId={projectId}
         sections={sections}
         current={current.formSection}
         answers={answers}
+        mode="submit"
       />
 
-      <form action={saveIntakeSection} className="space-y-8">
-        <input type="hidden" name="projectId" value={projectId} />
-        <input type="hidden" name="formSection" value={current.formSection} />
+      <div className="space-y-8">
 
         <div className="space-y-8 rounded-lg border border-line bg-white p-6">
           <div>
@@ -83,15 +86,20 @@ export function IntakeStep({
             Save
           </button>
           {previous ? (
-            <Link
-              href={`/project/${projectId}?section=${encodeURIComponent(previous.formSection)}`}
+            // Also a submit, for the same reason as the section list: going back
+            // should carry this section's answers back with it.
+            <button
+              type="submit"
+              name="goto"
+              value={previous.formSection}
+              formNoValidate
               className="text-sm text-muted underline-offset-4 hover:underline"
             >
               Back to {previous.title.toLowerCase()}
-            </Link>
+            </button>
           ) : null}
         </div>
-      </form>
-    </div>
+      </div>
+    </form>
   )
 }

@@ -144,6 +144,28 @@ export async function saveIntakeSection(formData: FormData) {
 
   const here = `/project/${projectId}?section=${encodeURIComponent(section.formSection)}`
 
+  // Moving to another section from the list down the side. The answers above are
+  // already saved, which is the whole point of routing this through the form
+  // rather than a link: a researcher who fills in half of 2.6 and jumps to 2.9
+  // to check something keeps the half.
+  //
+  // No completeness check. Jumping is not advancing, and a form this long is not
+  // one people fill in top to bottom. Required questions are still enforced
+  // where it matters, which is leaving intake.
+  const goto = String(formData.get('goto') ?? '')
+  if (goto) {
+    // Validated against the sections actually visible for this project, so the
+    // target cannot be a section this study does not have, or anything else.
+    const target = visibleSections({ ...existing, ...answers }).find(
+      (entry) => entry.formSection === goto,
+    )
+    redirect(
+      target
+        ? `/project/${projectId}?section=${encodeURIComponent(target.formSection)}`
+        : `${here}&saved=1`,
+    )
+  }
+
   if (intent !== 'advance') {
     redirect(`${here}&saved=1`)
   }

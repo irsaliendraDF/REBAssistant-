@@ -17,12 +17,24 @@ export function IntakeSectionNav({
   sections,
   current,
   answers,
+  mode = 'link',
 }: {
   projectId: string
   sections: IntakeSection[]
   /** The section being worked on, or read back at a checkpoint. */
   current: string
   answers: AnswerMap
+  /**
+   * `submit` renders each entry as a submit button inside the surrounding form,
+   * so moving to another section saves what has been typed on the way out.
+   *
+   * As plain links, which is what these were, a researcher who filled in half of
+   * 2.6 and clicked 2.9 to check something lost the half. The list looked like
+   * free navigation and behaved like a trapdoor, so people stopped using it and
+   * reported that they could not move around. `link` remains correct where there
+   * is nothing unsaved to lose, such as the checkpoint that reads answers back.
+   */
+  mode?: 'link' | 'submit'
 }) {
   return (
     <nav aria-label="Application sections" className="lg:pt-1">
@@ -39,18 +51,13 @@ export function IntakeSectionNav({
           const done = touched && missingRequired(section.questions, answers).length === 0
           const isCurrent = section.formSection === current
 
-          return (
-            <li key={section.formSection}>
-              <Link
-                href={`/project/${projectId}?section=${encodeURIComponent(section.formSection)}`}
-                aria-current={isCurrent ? 'page' : undefined}
-                className={[
-                  'flex items-start gap-2 rounded-md px-2 py-1.5 text-xs leading-snug transition',
-                  isCurrent
-                    ? 'bg-forest text-white'
-                    : 'text-muted hover:bg-surface-2 hover:text-ink',
-                ].join(' ')}
-              >
+          const className = [
+            'flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left text-xs leading-snug transition',
+            isCurrent ? 'bg-forest text-white' : 'text-muted hover:bg-surface-2 hover:text-ink',
+          ].join(' ')
+
+          const label = (
+            <>
                 <span
                   className={[
                     'font-mono text-[10px]',
@@ -75,7 +82,35 @@ export function IntakeSectionNav({
                     <path d="M3 8.5 6.5 12 13 4.5" />
                   </svg>
                 ) : null}
-              </Link>
+            </>
+          )
+
+          return (
+            <li key={section.formSection}>
+              {mode === 'submit' ? (
+                <button
+                  type="submit"
+                  name="goto"
+                  value={section.formSection}
+                  aria-current={isCurrent ? 'page' : undefined}
+                  // Without this, a browser refuses to submit while a required
+                  // field on the current section is empty, which is exactly the
+                  // half-finished state someone is in when they want to go and
+                  // check something else.
+                  formNoValidate
+                  className={className}
+                >
+                  {label}
+                </button>
+              ) : (
+                <Link
+                  href={`/project/${projectId}?section=${encodeURIComponent(section.formSection)}`}
+                  aria-current={isCurrent ? 'page' : undefined}
+                  className={className}
+                >
+                  {label}
+                </Link>
+              )}
             </li>
           )
         })}
