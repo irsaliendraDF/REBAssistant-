@@ -14,7 +14,14 @@ import type { SignInReason } from './callback'
  */
 
 /** Reasons raised before an email is ever sent, or by the code form. */
-export type SendReason = 'invalid_email' | 'rate_limited' | 'send_failed'
+/**
+ * There is no "could not be sent" reason, deliberately. Supabase reports a
+ * failure when the mail server does not answer in time, which is not the same as
+ * the mail being refused, and with Gmail behind it the message usually arrives
+ * anyway. Asserting it failed was wrong often enough to be a bug, so an
+ * unconfirmed send now goes to the sent screen with a caveat instead.
+ */
+export type SendReason = 'invalid_email' | 'rate_limited'
 export type CodeReason = 'invalid_code' | 'code_failed'
 
 export type SignInMessageKey = SignInReason | SendReason | CodeReason
@@ -24,7 +31,6 @@ export const SIGN_IN_MESSAGES: Record<SignInMessageKey, string> = {
   auth_not_configured: 'Sign-in is not connected yet. Please try again shortly.',
   rate_limited:
     'Too many sign-in emails have been sent recently. Please wait a minute and try again.',
-  send_failed: 'The sign-in email could not be sent. Please try again in a moment.',
   missing_code: 'That sign-in link was incomplete. Please request a new one below.',
   link_expired:
     'That link has expired or had already been used. Links last an hour and work once. Request another below, or use the six-digit code from the email instead.',

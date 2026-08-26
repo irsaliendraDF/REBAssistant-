@@ -64,7 +64,7 @@ describe('resetHelps', () => {
   // The case that prompted this. A paused database surfaces as a send failure,
   // and clearing browser cookies cannot send an email.
   it('does not offer the reset for failures it cannot fix', () => {
-    for (const reason of ['send_failed', 'rate_limited', 'invalid_email', 'invalid_code']) {
+    for (const reason of ['rate_limited', 'invalid_email', 'invalid_code']) {
       expect(resetHelps(reason)).toBe(false)
     }
   })
@@ -80,5 +80,24 @@ describe('resetHelps', () => {
 
   it('ignores a reason it does not recognise', () => {
     expect(resetHelps('something_invented')).toBe(false)
+  })
+})
+
+describe('no unconfirmed send is reported as a failure', () => {
+  /**
+   * Supabase reports a failure when the mail server does not answer in time.
+   * With Gmail behind it the message usually arrives anyway, so the app claimed
+   * the email could not be sent while the researcher was reading it. That
+   * message is gone on purpose, and this fails if anyone reintroduces it.
+   */
+  it('has no message asserting the email was not sent', () => {
+    const claims = Object.values(SIGN_IN_MESSAGES).filter((message) =>
+      /could not be sent|failed to send|was not sent/i.test(message),
+    )
+    expect(claims).toEqual([])
+  })
+
+  it('still names rate limiting, where trying again at once is the wrong move', () => {
+    expect(signInMessage('rate_limited')).toMatch(/wait a minute/i)
   })
 })

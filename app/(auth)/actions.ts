@@ -50,11 +50,25 @@ export async function signInWithMagicLink(formData: FormData) {
   })
 
   if (error) {
-    // Rate limiting is the likely cause during testing, since the built-in
-    // sender allows only a few messages an hour. Say so rather than showing a
-    // generic failure the researcher cannot act on.
-    const reason = /rate|limit|too many/i.test(error.message) ? 'rate_limited' : 'send_failed'
-    redirect(`/sign-in?error=${reason}`)
+    // Rate limiting is worth naming: it is the one failure where trying again
+    // immediately is exactly the wrong move.
+    if (/rate|limit|too many/i.test(error.message)) {
+      redirect('/sign-in?error=rate_limited')
+    }
+
+    // Everything else lands on the same screen as a success, with a caveat.
+    //
+    // We do not know that the email was not sent. Supabase reports a failure
+    // when it does not get a timely answer from the mail server, and Gmail's
+    // handshake is regularly slower than that window, so the message goes out
+    // and arrives while the app is saying it could not be sent. That happened
+    // in testing on 26 August 2026.
+    //
+    // Claiming it failed is worse than useless here. It is wrong, and it hides
+    // the six-digit code box, which only appears on the sent screen. So the
+    // researcher would receive a working email and be looking at a page that
+    // offered them no way to use it.
+    redirect(`/sign-in?sent=${encodeURIComponent(email)}&unconfirmed=1`)
   }
 
   redirect(`/sign-in?sent=${encodeURIComponent(email)}`)

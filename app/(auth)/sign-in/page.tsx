@@ -23,6 +23,7 @@ export default async function SignInPage(props: PageProps<'/sign-in'>) {
   const reason = readOne(search.error)
   const error = signInMessage(reason)
   const cleared = search.cleared === '1'
+  const unconfirmed = search.unconfirmed === '1'
   // Offered only where it is the likely fix: a session this browser is holding
   // that the server will not accept. This used to be every error, which meant a
   // researcher whose email had simply failed to send was handed a remedy for a
@@ -65,6 +66,17 @@ export default async function SignInPage(props: PageProps<'/sign-in'>) {
             good for one use. If it does not arrive within a couple of minutes, check your junk
             folder before requesting another.
           </p>
+
+          {/* Said plainly, because the honest position is that we do not know.
+              The mail server did not answer in time, which is not the same as
+              refusing, and the message usually arrives regardless. */}
+          {unconfirmed ? (
+            <p className="mt-3 rounded-md border border-olive/60 bg-lime-soft/40 px-3 py-2 text-xs leading-relaxed text-ink">
+              The mail server did not confirm this one in time, so we cannot promise it went. It
+              usually still arrives. Give it two minutes, and request another below if nothing
+              turns up.
+            </p>
+          ) : null}
 
           {/* The link has to be opened in this browser, and a university mail
               system may have opened it already by the time it arrives. The code
