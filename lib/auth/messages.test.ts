@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { exchangeFailureReason, readCallbackParams, type SignInReason } from './callback'
-import { SIGN_IN_MESSAGES, signInMessage } from './messages'
+import { SIGN_IN_MESSAGES, resetHelps, signInMessage } from './messages'
 
 /**
  * Every reason the callback can produce, listed here rather than derived, so
@@ -57,5 +57,28 @@ describe('sign-in messages', () => {
   it('returns nothing for a reason it does not recognise', () => {
     expect(signInMessage('made_up')).toBeUndefined()
     expect(signInMessage(undefined)).toBeUndefined()
+  })
+})
+
+describe('resetHelps', () => {
+  // The case that prompted this. A paused database surfaces as a send failure,
+  // and clearing browser cookies cannot send an email.
+  it('does not offer the reset for failures it cannot fix', () => {
+    for (const reason of ['send_failed', 'rate_limited', 'invalid_email', 'invalid_code']) {
+      expect(resetHelps(reason)).toBe(false)
+    }
+  })
+
+  it('offers the reset where a stuck session is the likely cause', () => {
+    expect(resetHelps('exchange_failed')).toBe(true)
+  })
+
+  it('does not offer it on a clean sign-in screen', () => {
+    expect(resetHelps(undefined)).toBe(false)
+    expect(resetHelps('')).toBe(false)
+  })
+
+  it('ignores a reason it does not recognise', () => {
+    expect(resetHelps('something_invented')).toBe(false)
   })
 })

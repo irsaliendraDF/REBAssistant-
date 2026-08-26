@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 
-import { signInMessage } from '@/lib/auth/messages'
+import { resetHelps, signInMessage } from '@/lib/auth/messages'
 import { getSession } from '@/lib/auth/session'
 import { env, isSupabaseConfigured } from '@/lib/env'
 
@@ -20,11 +20,14 @@ export default async function SignInPage(props: PageProps<'/sign-in'>) {
   }
 
   const sentTo = readOne(search.sent)
-  const error = signInMessage(readOne(search.error))
+  const reason = readOne(search.error)
+  const error = signInMessage(reason)
   const cleared = search.cleared === '1'
   // Offered only where it is the likely fix: a session this browser is holding
-  // that the server will not accept. On a clean sign-in screen it is noise.
-  const offersReset = Boolean(error) || cleared
+  // that the server will not accept. This used to be every error, which meant a
+  // researcher whose email had simply failed to send was handed a remedy for a
+  // different problem, tried it, and learned that the remedies do not work.
+  const offersReset = resetHelps(reason) || cleared
   const usePlaceholder = env.app.usePlaceholderAuth && !isSupabaseConfigured
   const signInUnavailable = !usePlaceholder && !isSupabaseConfigured
 

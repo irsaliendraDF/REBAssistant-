@@ -41,3 +41,26 @@ export function signInMessage(reason: string | undefined): string | undefined {
   if (!reason) return undefined
   return SIGN_IN_MESSAGES[reason as SignInMessageKey]
 }
+
+/**
+ * Whether clearing this browser's sign-in data could plausibly help.
+ *
+ * It helps with exactly one thing: a browser holding a session the server will
+ * not accept. It cannot help with an email that was never sent, and offering it
+ * there is worse than not offering it at all. Someone whose real problem was a
+ * paused database was shown this, tried it, and reported that the button did
+ * nothing, which was true and was our fault for suggesting it.
+ *
+ * A remedy offered for the wrong failure teaches people that the remedies do not
+ * work, and the next time they hit the one it does fix, they will not try it.
+ */
+const RESET_HELPS = new Set<SignInMessageKey>([
+  // The link was right and the exchange still failed, which is what a half
+  // written session cookie looks like from here.
+  'exchange_failed',
+])
+
+export function resetHelps(reason: string | undefined): boolean {
+  if (!reason) return false
+  return RESET_HELPS.has(reason as SignInMessageKey)
+}
