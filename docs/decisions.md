@@ -352,6 +352,30 @@ session the server will not accept does not have.
 
 ## Known provisional things
 
+**The Supabase project is on a plan that pauses itself, and this has already
+taken the app down once.** On 26 August 2026 nobody could sign in. The screen
+said the sign-in email could not be sent, which points at the mail configuration
+and is a red herring: the project had paused after a stretch of inactivity, and a
+paused project refuses every API call, including the one that sends the email.
+Restoring it fixes it, and no data is lost.
+
+It will happen again, and this product's usage pattern is the worst possible fit
+for it. Researchers do not use an ethics application tool daily. They use it hard
+for a week, submit, and come back months later for the next study. A tool that
+dies after a week of quiet is a tool that is dead every single time somebody
+returns to it, and the failure looks like a mail problem rather than a hosting
+one, so the person debugging it starts in the wrong place. That is what happened
+here.
+
+**This must be resolved before Future Civics has real researchers on it**, by
+moving the project to a paid Supabase plan. It is not a code change and there is
+nothing to build; it is a billing decision, and it is the single cheapest
+reliability improvement available to this project.
+
+Until then, the symptom to recognise: sign-in fails with a send failure, and the
+Supabase dashboard shows the project paused. Restore it and wait a few minutes.
+Do not go looking at the Gmail App Password first, as this project did.
+
 **The intake question set is a first draft** for the client's research ethics
 expert to revise. Wording, ordering, and what is required versus optional are all
 open. It is one file, so her feedback is cheap to apply.

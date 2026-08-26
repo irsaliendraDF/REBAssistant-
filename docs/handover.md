@@ -172,6 +172,24 @@ will not tolerate.
 omissions by rule. A model pass would catch more. The method check was upgraded
 from rules to model reasoning; gap analysis has not been.
 
+**The Supabase project pauses itself when idle, and this has already taken the
+app down once.** On 26 August 2026 nobody could sign in. The screen said the
+sign-in email could not be sent, which points at the mail setup and is a red
+herring: the project had paused after a stretch of inactivity, and a paused
+project refuses every API call, including the one that sends the email. Restoring
+it fixes it and loses no data.
+
+This product's usage pattern is the worst possible fit for that behaviour.
+Researchers use an ethics tool hard for a week, submit, and return months later
+for the next study, so a project that sleeps after a week of quiet is asleep
+every time somebody comes back. **Move it to a paid Supabase plan before real
+researchers are on it.** There is nothing to build; it is a billing decision, and
+it is the cheapest reliability improvement available here.
+
+The symptom to recognise: sign-in reports a send failure, and the dashboard shows
+the project paused. Restore, wait a few minutes, done. Do not start with the
+Gmail App Password, as this project did.
+
 **Email is on a Gmail account, not a domain.** Fine for a test group, wrong for a
 cohort: it caps around 500 messages a day. When it moves, use a **Future Civics**
 domain with SPF and DKIM records, not a DigitalFlow one. See
