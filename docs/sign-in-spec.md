@@ -53,11 +53,7 @@ design. **If the product ever opens beyond a known cohort, reopen this.**
 
 Each stage is reported before the next begins.
 
-**Stage 1. Verify, write nothing.** Confirm the Supabase error for an unknown
-address with `shouldCreateUser: false` is distinguishable in code from a rate
-limit and from an unreachable project. The whole design rests on telling those
-three apart, and the last two outages were both misread failures. Report the
-exact error shape.
+**Stage 1. Verify, write nothing. Done 2026-09-21, results below.**
 
 **Stage 2. The sign-in flow.** `signInWithMagicLink` passes
 `shouldCreateUser: false`, a new `unknown_address` state on the sign-in screen,
@@ -68,6 +64,50 @@ the signed-in address. An empty dashboard under the wrong address currently
 looks identical to lost work. **Cuttable if Irene wants stage 2 alone.**
 
 **Stage 4. Deploy and verify on production**, with the callback probe below.
+
+## Stage 1 results, 2026-09-21
+
+Run against the live project with the same `@supabase/supabase-js` the app uses,
+so these are the shapes the app would see. No email sent, no account created.
+
+| Case | `name` | `status` | `code` | `message` |
+|---|---|---|---|---|
+| Unknown address, `shouldCreateUser: false` | `AuthApiError` | 422 | `otp_disabled` | `Signups not allowed for otp` |
+| Project unreachable | `AuthRetryableFetchError` | 0 | *(none)* | `fetch failed` |
+| Rate limited | **not verified, see below** | | | |
+
+**The two that matter are cleanly distinguishable, and not by their messages.**
+`error.code` is populated on API errors and `error.name` separates an answer from
+a failure to reach the server at all. **Branch on `code` and `name`. Do not
+extend the message regex.**
+
+**The message regex is the bug behind both outages, now confirmed rather than
+suspected.** `signInWithMagicLink` tests `/rate|limit|too many/i` against the
+message and sends everything else to the "check your email" screen. An
+unreachable project produces `fetch failed`, which matches nothing, so the
+researcher is told an email is on its way when the database is down and no email
+exists. **That is exactly what Shakara saw on 26 August and again this weekend.**
+
+**Stage 2 should therefore also fix the outage screen**, which was not in the
+original scope of this document. With `AuthRetryableFetchError` identifiable, the
+app can say the service is temporarily unavailable and to try again shortly,
+instead of sending someone to an inbox to wait for a message that is not coming.
+It does not prevent the outage. It stops the outage lying about itself.
+
+### What is not verified
+
+**The rate-limit shape.** Twelve consecutive unknown-address calls produced no
+429, which makes sense: that path sends no email, so it does not spend the email
+allowance. Triggering a real one means sending real sign-in emails to a real
+inbox, which was not done without asking.
+
+**This matters more than it looks.** Supabase has two different 429s here, and at
+least one of them reads *"For security purposes, you can only request this after
+N seconds"*, which contains none of `rate`, `limit` or `too many`. If that is the
+one the app hits, today's regex misses it and the researcher is again told to
+check an inbox. **Branching on `status === 429` removes the question**, so stage 2
+can proceed without verifying the string. Verify it anyway when a real send is
+being tested.
 
 ## The one-request test for "is the database up"
 
