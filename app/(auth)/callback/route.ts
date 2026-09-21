@@ -1,16 +1,22 @@
 import { NextResponse } from 'next/server'
 
-import {
-  exchangeFailureReason,
-  readCallbackParams,
-  signInUrl,
-} from '@/lib/auth/callback'
+import { exchangeFailureReason, readCallbackParams, signInUrl } from '@/lib/auth/callback'
 import { createClient } from '@/lib/supabase/server'
 
 /**
- * Magic link callback.
+ * Where an emailed link lands.
  *
- * Two shapes of link arrive here, and both are accepted:
+ * **Sign-in does not come through here any more.** Since 21 September 2026 it is
+ * email and password, and exactly two links still reach this route:
+ *
+ *   confirming a new account, which Supabase types `signup`
+ *   resetting a password, which it types `recovery`
+ *
+ * Both are handled identically, because both are the same operation: prove the
+ * link is genuine, mint a session, and go somewhere. Only the destination
+ * differs, and `readCallbackParams` decides that.
+ *
+ * Two shapes of link arrive, and both are accepted:
  *
  *   `?code=...`        the flow Supabase uses by default, which completes only
  *                      in the browser that asked for the link, because the

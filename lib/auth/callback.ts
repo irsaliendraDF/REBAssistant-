@@ -1,19 +1,24 @@
 /**
- * Reading a sign-in link.
+ * Reading an emailed link.
  *
  * Pure, so the decisions can be tested without a browser or a Supabase project.
  * The route handler does the talking to Supabase; everything about *which*
  * failure happened, and therefore what the researcher should be told, is here.
  *
- * Why this file exists at all: every failure used to arrive as one sentence,
- * "that link has expired or has already been used". Three quite different things
- * produce it, and only one of them is solved by requesting another link. Sending
- * someone round the same loop with the same advice is how a person concludes the
- * tool is broken and emails you instead.
+ * **Sign-in no longer arrives this way.** Since 21 September 2026 it is email
+ * and password, so exactly two links still reach this route: confirming a new
+ * account, and resetting a password. Both are once in an account's life rather
+ * than once per sign-in, which is the whole point of the change.
+ *
+ * Why the failure detail survives a change that removed most of its callers:
+ * every failure used to arrive as one sentence, "that link has expired or has
+ * already been used". Three quite different things produce it, and only one of
+ * them is solved by requesting another link. A reset link is exactly as capable
+ * of being expired, spent, or opened in the wrong browser as a sign-in link was.
  */
 
-/** The email link types this app can ever receive. */
-export type EmailLinkType = 'magiclink' | 'signup' | 'email'
+/** The email link types this app can still receive. */
+export type EmailLinkType = 'signup' | 'email' | 'recovery'
 
 export type SignInReason =
   /** The link is past its hour, or has already been used once. */
@@ -35,19 +40,25 @@ export type CallbackOutcome =
   | { kind: 'token_hash'; tokenHash: string; type: EmailLinkType; next: string }
   | { kind: 'failed'; reason: SignInReason }
 
+/** Where each kind of link should land once it has been exchanged. */
+export const AFTER_RECOVERY = '/reset-password'
+export const AFTER_CONFIRMATION = '/dashboard'
+
 /**
  * Only relative paths, and only ones that stay on this site. A `next` parameter
- * that can be pointed anywhere turns the sign-in callback into an open redirect,
- * which is worth exactly nothing to us and quite a lot to someone else.
+ * that can be pointed anywhere turns the callback into an open redirect, which
+ * is worth exactly nothing to us and quite a lot to someone else.
  */
-export function safeNext(value: string | null): string {
-  if (!value) return '/dashboard'
-  if (!value.startsWith('/') || value.startsWith('//')) return '/dashboard'
+export function safeNext(value: string | null, fallback: string = AFTER_CONFIRMATION): string {
+  if (!value) return fallback
+  if (!value.startsWith('/') || value.startsWith('//')) return fallback
   return value
 }
 
 function readLinkType(value: string | null): EmailLinkType {
-  return value === 'signup' || value === 'email' ? value : 'magiclink'
+  if (value === 'recovery') return 'recovery'
+  if (value === 'email') return 'email'
+  return 'signup'
 }
 
 export function readCallbackParams(params: URLSearchParams): CallbackOutcome {
@@ -59,17 +70,28 @@ export function readCallbackParams(params: URLSearchParams): CallbackOutcome {
   const errorCode = params.get('error_code')
 
   if (error || errorCode) {
-    return { kind: 'failed', reason: errorCode === 'otp_expired' ? 'link_expired' : 'exchange_failed' }
+    return {
+      kind: 'failed',
+      reason: errorCode === 'otp_expired' ? 'link_expired' : 'exchange_failed',
+    }
   }
 
-  const next = safeNext(params.get('next'))
+  const type = readLinkType(params.get('type'))
+
+  // A recovery link has somewhere specific to go, and it goes there whether or
+  // not the `next` parameter survived the trip through the mail client. Landing
+  // a password reset on the dashboard would leave the person signed in holding
+  // the password they came here to change, with no sign that anything was left
+  // undone.
+  const fallback = type === 'recovery' ? AFTER_RECOVERY : AFTER_CONFIRMATION
+  const next = safeNext(params.get('next'), fallback)
 
   // The token-hash form, which does not depend on a cookie from the browser that
   // asked for the link. Accepted whether or not the email template currently
   // sends it, so switching the template is a change in one place.
   const tokenHash = params.get('token_hash')
   if (tokenHash) {
-    return { kind: 'token_hash', tokenHash, type: readLinkType(params.get('type')), next }
+    return { kind: 'token_hash', tokenHash, type, next }
   }
 
   const code = params.get('code')

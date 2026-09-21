@@ -20,7 +20,6 @@ export default async function SignInPage(props: PageProps<'/sign-in'>) {
   }
 
   const error = signInMessage(readOne(search.error))
-  const confirmed = search.confirmed === '1'
   const usePlaceholder = env.app.usePlaceholderAuth && !isSupabaseConfigured
   const signInUnavailable = !usePlaceholder && !isSupabaseConfigured
 
@@ -39,12 +38,9 @@ export default async function SignInPage(props: PageProps<'/sign-in'>) {
 
   return (
     <AuthPage error={error}>
-      {confirmed ? (
-        <p className="mb-6 rounded-lg border border-olive/60 bg-lime-soft/40 px-4 py-3 text-sm leading-relaxed text-ink">
-          Your email is confirmed. Sign in below.
-        </p>
-      ) : null}
-
+      {/* No "your email is confirmed" banner here. Confirming a link signs the
+          researcher in, so they land on the dashboard and never see this screen
+          again. A banner nobody can reach is a promise the app cannot keep. */}
       {usePlaceholder ? (
         <div className="mb-6 rounded-lg border border-olive/60 bg-lime-soft/40 p-4 text-sm text-ink">
           <p className="font-medium">Placeholder sign-in</p>

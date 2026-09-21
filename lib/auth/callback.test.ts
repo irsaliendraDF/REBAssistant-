@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  AFTER_CONFIRMATION,
+  AFTER_RECOVERY,
   exchangeFailureReason,
   readCallbackParams,
   safeNext,
@@ -11,40 +13,80 @@ function params(query: string): URLSearchParams {
   return new URLSearchParams(query)
 }
 
-describe('reading a sign-in link', () => {
+/**
+ * Since 21 September 2026, sign-in is email and password and does not come
+ * through here. Two links still do: confirming a new account, and resetting a
+ * password.
+ */
+describe('reading an emailed link', () => {
   it('takes the code from the default flow', () => {
     const outcome = readCallbackParams(params('code=abc123'))
 
-    expect(outcome).toEqual({ kind: 'code', code: 'abc123', next: '/dashboard' })
+    expect(outcome).toEqual({ kind: 'code', code: 'abc123', next: AFTER_CONFIRMATION })
   })
 
   it('takes a token hash, which works on a device that never asked for the link', () => {
-    const outcome = readCallbackParams(params('token_hash=xyz&type=magiclink'))
+    const outcome = readCallbackParams(params('token_hash=xyz&type=signup'))
 
     expect(outcome).toEqual({
       kind: 'token_hash',
       tokenHash: 'xyz',
-      type: 'magiclink',
-      next: '/dashboard',
+      type: 'signup',
+      next: AFTER_CONFIRMATION,
     })
   })
 
-  it('recognises the first-time confirmation link', () => {
-    const outcome = readCallbackParams(params('token_hash=xyz&type=signup'))
+  it('recognises a password reset link', () => {
+    const outcome = readCallbackParams(params('token_hash=xyz&type=recovery'))
 
-    expect(outcome).toMatchObject({ kind: 'token_hash', type: 'signup' })
+    expect(outcome).toMatchObject({ kind: 'token_hash', type: 'recovery' })
   })
 
-  it('falls back to a magic link for a type it does not know', () => {
+  it('treats a type it does not know as a confirmation', () => {
     const outcome = readCallbackParams(params('token_hash=xyz&type=nonsense'))
 
-    expect(outcome).toMatchObject({ type: 'magiclink' })
+    expect(outcome).toMatchObject({ type: 'signup' })
+  })
+
+  it('no longer knows about magic links', () => {
+    // The old default. If this ever comes back as its own type, the sign-in
+    // mechanism has been changed without this file being read.
+    const outcome = readCallbackParams(params('token_hash=xyz&type=magiclink'))
+
+    expect(outcome).toMatchObject({ type: 'signup' })
   })
 
   it('prefers the token hash where a link somehow carries both', () => {
     const outcome = readCallbackParams(params('token_hash=xyz&code=abc'))
 
     expect(outcome.kind).toBe('token_hash')
+  })
+})
+
+describe('where each kind of link lands', () => {
+  /**
+   * The one that would be quietly wrong. A reset link that landed on the
+   * dashboard would leave the person signed in, holding the password they came
+   * to change, with nothing on screen saying the job was not finished.
+   */
+  it('sends a recovery link to the password form even with no next parameter', () => {
+    expect(readCallbackParams(params('token_hash=xyz&type=recovery'))).toMatchObject({
+      next: AFTER_RECOVERY,
+    })
+  })
+
+  it('sends a confirmation to the dashboard, because it signs them in', () => {
+    expect(readCallbackParams(params('token_hash=xyz&type=signup'))).toMatchObject({
+      next: AFTER_CONFIRMATION,
+    })
+  })
+
+  it('honours an explicit next, which is how the code flow carries recovery', () => {
+    // The `?code=` form has no type on it, so the destination has to travel in
+    // `next`. That is what `resetPasswordForEmail` sets.
+    expect(readCallbackParams(params('code=abc&next=%2Freset-password'))).toMatchObject({
+      next: AFTER_RECOVERY,
+    })
   })
 })
 
@@ -101,14 +143,17 @@ describe('where the callback sends people afterwards', () => {
     expect(safeNext('/project/123')).toBe('/project/123')
   })
 
-  it('refuses another site', () => {
-    expect(safeNext('https://example.com/phish')).toBe('/dashboard')
-    expect(safeNext('//example.com/phish')).toBe('/dashboard')
+  it('refuses another site, and falls back to whatever the caller asked for', () => {
+    expect(safeNext('https://example.com/phish')).toBe(AFTER_CONFIRMATION)
+    expect(safeNext('//example.com/phish')).toBe(AFTER_CONFIRMATION)
+    // A tampered recovery link must not be rescued onto the dashboard either.
+    expect(safeNext('https://example.com/phish', AFTER_RECOVERY)).toBe(AFTER_RECOVERY)
   })
 
-  it('defaults to the dashboard', () => {
-    expect(safeNext(null)).toBe('/dashboard')
-    expect(safeNext('')).toBe('/dashboard')
+  it('defaults to the dashboard unless told otherwise', () => {
+    expect(safeNext(null)).toBe(AFTER_CONFIRMATION)
+    expect(safeNext('')).toBe(AFTER_CONFIRMATION)
+    expect(safeNext(null, AFTER_RECOVERY)).toBe(AFTER_RECOVERY)
   })
 
   it('carries the reason back to the sign-in screen', () => {
