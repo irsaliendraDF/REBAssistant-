@@ -1,21 +1,15 @@
 import { redirect } from 'next/navigation'
 
-import { resetHelps, signInMessage } from '@/lib/auth/messages'
+import { AuthLinks, AuthPage, Field, SubmitButton } from '@/components/auth-page'
+import { signInMessage } from '@/lib/auth/messages'
 import { getSession } from '@/lib/auth/session'
 import { env, isSupabaseConfigured } from '@/lib/env'
 
-import {
-  clearSession,
-  createAccount,
-  signInAsTestResearcher,
-  signInWithCode,
-  signInWithMagicLink,
-} from '../actions'
+import { signInAsTestResearcher, signInWithPassword } from '../actions'
 
 export const metadata = {
   title: 'Sign in | Research Ethics Board Assistant',
 }
-
 
 export default async function SignInPage(props: PageProps<'/sign-in'>) {
   const search = await props.searchParams
@@ -25,213 +19,78 @@ export default async function SignInPage(props: PageProps<'/sign-in'>) {
     redirect('/dashboard')
   }
 
-  const sentTo = readOne(search.sent)
-  // An address Supabase has no account for. Its own screen rather than a red
-  // error box: there is nothing wrong with the address, and the two things the
-  // researcher might want to do about it are both buttons.
-  const unknownAddress = readOne(search.unknown)
-  const reason = readOne(search.error)
-  const error = signInMessage(reason)
-  const cleared = search.cleared === '1'
-  const unconfirmed = search.unconfirmed === '1'
-  // Offered only where it is the likely fix: a session this browser is holding
-  // that the server will not accept. This used to be every error, which meant a
-  // researcher whose email had simply failed to send was handed a remedy for a
-  // different problem, tried it, and learned that the remedies do not work.
-  const offersReset = resetHelps(reason) || cleared
+  const error = signInMessage(readOne(search.error))
+  const confirmed = search.confirmed === '1'
   const usePlaceholder = env.app.usePlaceholderAuth && !isSupabaseConfigured
   const signInUnavailable = !usePlaceholder && !isSupabaseConfigured
 
-  return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-6 py-16">
-      <div className="mb-10">
-        <h1 className="text-3xl font-semibold text-ink">
-          Research Ethics Board Assistant
-        </h1>
-        <p className="mt-3 text-sm leading-relaxed text-muted">
-          Prepare a Research Ethics Board application, section by section. Research Ethics Board
-          Assistant helps you draft and spot gaps. It does not decide whether your application will
-          be approved.
-        </p>
-      </div>
-
-      {error ? (
-        <p className="mb-6 rounded-lg border border-alert/40 bg-alert-soft px-4 py-3 text-sm leading-relaxed text-alert">
-          {error}
-        </p>
-      ) : null}
-
-      {cleared ? (
-        <p className="mb-6 rounded-lg border border-line bg-surface px-4 py-3 text-sm leading-relaxed text-muted">
-          The sign-in data held in this browser has been cleared. Ask for a link below and start
-          again.
-        </p>
-      ) : null}
-
-      {sentTo ? (
-        <div className="rounded-lg border border-line bg-surface p-5">
-          <p className="text-sm font-medium text-ink">Check Your Email</p>
-          <p className="mt-2 text-sm leading-relaxed text-muted">
-            A sign-in link is on its way to <span className="font-medium">{sentTo}</span>. It is
-            good for one use. If it does not arrive within a couple of minutes, check your junk
-            folder before requesting another.
-          </p>
-
-          {/* Said plainly, because the honest position is that we do not know.
-              The mail server did not answer in time, which is not the same as
-              refusing, and the message usually arrives regardless. */}
-          {unconfirmed ? (
-            <p className="mt-3 rounded-md border border-olive/60 bg-lime-soft/40 px-3 py-2 text-xs leading-relaxed text-ink">
-              The mail server did not confirm this one in time, so we cannot promise it went. It
-              usually still arrives. Give it two minutes, and request another below if nothing
-              turns up.
-            </p>
-          ) : null}
-
-          {/* The link has to be opened in this browser, and a university mail
-              system may have opened it already by the time it arrives. The code
-              in the same email has neither problem, so it is offered here rather
-              than buried as a fallback for people who already gave up. */}
-          <form action={signInWithCode} className="mt-5 border-t border-line pt-5">
-            <input type="hidden" name="email" value={sentTo} />
-            <label htmlFor="code" className="block text-sm font-medium text-ink">
-              Or enter the six-digit code from that email
-            </label>
-            <p className="mt-1 text-xs leading-relaxed text-muted">
-              Use this if the link does not work, or if you are reading the email on a different
-              device from the one you are signing in on.
-            </p>
-            <div className="mt-3 flex gap-2">
-              <input
-                id="code"
-                name="code"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                pattern="[0-9]*"
-                maxLength={7}
-                placeholder="123456"
-                className="w-32 rounded-md border border-line px-3 py-2 font-mono text-sm tracking-widest text-ink outline-none focus:border-forest"
-              />
-              <button
-                type="submit"
-                className="rounded-md bg-forest px-4 py-2 text-sm font-medium text-white transition hover:bg-forest-dark"
-              >
-                Sign In
-              </button>
-            </div>
-          </form>
-
-          <div className="mt-5 flex flex-wrap items-center gap-4 border-t border-line pt-4">
-            <a href="/sign-in" className="text-sm text-muted underline underline-offset-4">
-              Use a different email
-            </a>
-            <form action={signInWithMagicLink}>
-              <input type="hidden" name="email" value={sentTo} />
-              <button
-                type="submit"
-                className="text-sm text-muted underline underline-offset-4 hover:text-ink"
-              >
-                Send another link
-              </button>
-            </form>
-          </div>
-        </div>
-      ) : unknownAddress ? (
-        <div className="rounded-lg border border-line bg-surface p-5">
-          <p className="text-sm font-medium text-ink">No Account For That Address Yet</p>
-          <p className="mt-2 text-sm leading-relaxed text-muted">
-            Nothing is signed up under{' '}
-            <span className="font-medium text-ink">{unknownAddress}</span>, so no email has been
-            sent. If you have used Research Ethics Board Assistant before, it may be under a
-            different address: check that one first, because your saved work stays with the address
-            you signed up with.
-          </p>
-
-          <form action={createAccount} className="mt-5 border-t border-line pt-5">
-            <input type="hidden" name="email" value={unknownAddress} />
-            <button
-              type="submit"
-              className="rounded-md bg-forest px-4 py-2 text-sm font-medium text-white transition hover:bg-forest-dark"
-            >
-              Create An Account For This Address
-            </button>
-          </form>
-
-          <div className="mt-5 border-t border-line pt-4">
-            <a href="/sign-in" className="text-sm text-muted underline underline-offset-4">
-              Try a different email
-            </a>
-          </div>
-        </div>
-      ) : signInUnavailable ? (
+  if (signInUnavailable) {
+    return (
+      <AuthPage error={error}>
         <div className="rounded-lg border border-line bg-surface p-4 text-sm text-muted">
           <p className="font-medium text-ink">Sign-In Is Not Available Yet</p>
           <p className="mt-1 leading-relaxed">
             This is an early build. Accounts are created once the database is connected.
           </p>
         </div>
-      ) : (
-        <>
-          {usePlaceholder ? (
-            <div className="mb-6 rounded-lg border border-olive/60 bg-lime-soft/40 p-4 text-sm text-ink">
-              <p className="font-medium">Placeholder sign-in</p>
-              <p className="mt-1 leading-relaxed">
-                Local build only, with no database connected. The email link replaces this once
-                Supabase is configured.
-              </p>
-            </div>
-          ) : null}
+      </AuthPage>
+    )
+  }
 
-          <form
-            action={usePlaceholder ? signInAsTestResearcher : signInWithMagicLink}
-            className="space-y-4"
-          >
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-muted">
-                Email
-              </label>
-              {!usePlaceholder ? (
-                <p className="mt-1 text-xs text-muted">
-                  We send a link that signs you in. There is no password to remember.
-                </p>
-              ) : null}
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                defaultValue={usePlaceholder ? 'test.researcher@dal.ca' : undefined}
-                placeholder="you@dal.ca"
-                className="mt-2 w-full rounded-md border border-line px-3 py-2 text-sm text-ink outline-none focus:border-forest"
-              />
-            </div>
-            <button
-              type="submit"
-              className="w-full rounded-md bg-forest px-4 py-2.5 text-sm font-medium text-white transition hover:bg-forest-dark"
-            >
-              {usePlaceholder ? 'Continue' : 'Email Me a Sign-In Link'}
-            </button>
-          </form>
-        </>
-      )}
-
-      {offersReset && !usePlaceholder && isSupabaseConfigured ? (
-        <form action={clearSession} className="mt-8 border-t border-line pt-5">
-          <p className="text-xs leading-relaxed text-muted">
-            Still stuck on a computer where this used to work? Clearing the sign-in data held in
-            this browser resolves a session it can no longer use. It signs you out here and nowhere
-            else, and deletes none of your work.
-          </p>
-          <button
-            type="submit"
-            className="mt-3 text-sm text-muted underline underline-offset-4 hover:text-ink"
-          >
-            Clear sign-in data on this device
-          </button>
-        </form>
+  return (
+    <AuthPage error={error}>
+      {confirmed ? (
+        <p className="mb-6 rounded-lg border border-olive/60 bg-lime-soft/40 px-4 py-3 text-sm leading-relaxed text-ink">
+          Your email is confirmed. Sign in below.
+        </p>
       ) : null}
-    </main>
+
+      {usePlaceholder ? (
+        <div className="mb-6 rounded-lg border border-olive/60 bg-lime-soft/40 p-4 text-sm text-ink">
+          <p className="font-medium">Placeholder sign-in</p>
+          <p className="mt-1 leading-relaxed">
+            Local build only, with no database connected. Email and password replaces this once
+            Supabase is configured.
+          </p>
+        </div>
+      ) : null}
+
+      <form
+        action={usePlaceholder ? signInAsTestResearcher : signInWithPassword}
+        className="space-y-4"
+      >
+        <Field
+          id="email"
+          name="email"
+          type="email"
+          label="Email"
+          autoComplete="email"
+          placeholder="you@dal.ca"
+          defaultValue={usePlaceholder ? 'test.researcher@dal.ca' : undefined}
+        />
+        {usePlaceholder ? null : (
+          <Field
+            id="password"
+            name="password"
+            type="password"
+            label="Password"
+            autoComplete="current-password"
+          />
+        )}
+        <SubmitButton>{usePlaceholder ? 'Continue' : 'Sign In'}</SubmitButton>
+      </form>
+
+      {usePlaceholder ? null : (
+        <AuthLinks>
+          <a href="/forgot-password" className="underline underline-offset-4 hover:text-ink">
+            Forgot your password?
+          </a>
+          <a href="/register" className="underline underline-offset-4 hover:text-ink">
+            Create an account
+          </a>
+        </AuthLinks>
+      )}
+    </AuthPage>
   )
 }
 

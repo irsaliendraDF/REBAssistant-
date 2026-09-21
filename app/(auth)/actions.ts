@@ -4,164 +4,174 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 import { getRequestOrigin } from '@/lib/app-url'
-import { isServiceUnavailable, readSendOutcome } from '@/lib/auth/send-outcome'
+import {
+  isServiceUnavailable,
+  readRegisterOutcome,
+  readSignInOutcome,
+} from '@/lib/auth/send-outcome'
 import { PLACEHOLDER_COOKIE } from '@/lib/auth/session'
 import { env, isSupabaseConfigured } from '@/lib/env'
 import { createClient } from '@/lib/supabase/server'
 
 /**
- * Sign-in.
+ * Sign-in: email and password.
  *
- * Email magic link, not institutional single sign-on (build plan Section 9,
- * assumption 1). No Google or other social sign-in: one identity per researcher,
- * so their saved details are reused rather than fragmented across two accounts
- * they did not realise were different.
+ * Replaced the magic link on 21 September 2026, by Irene's decision. The link
+ * had accumulated a remedy for each of its failure modes: a six-digit code
+ * because Microsoft 365, which Dalhousie runs, spends single-use links by
+ * scanning them; a browser reset because a link opened in the wrong browser
+ * cannot complete; four separate messages for four ways a link dies. Each was a
+ * correct fix for a real failure, and together they were a sign-in screen that
+ * needed explaining. A password has none of those failures.
  *
- * The same email carries a six-digit code, and `signInWithCode` below accepts
- * it. That is not a nicety. A link is a single-use URL sitting in a university
- * mailbox: Microsoft 365, which Dalhousie runs, opens links in mail to check
- * them, and a link that has been opened once is spent. A typed code cannot be
- * spent by something that reads the message, and it works on a phone when the
- * link was asked for on a laptop, which the link itself cannot.
+ * Email has not disappeared. It moved from every sign-in to twice in an
+ * account's life: confirming it, and resetting a forgotten password. Confirmation
+ * stays on deliberately, because without it anyone could register an address they
+ * do not own.
  *
- * Signing in never creates an account. `createAccount` below does, and only
- * when the researcher asks for it on the screen that tells them there is no
- * account for that address yet. Sign-in used to create one for any address typed
- * in, silently, which is how one researcher ended up with three accounts and
- * work under two of them. From her side that is not an error. It is a successful
- * sign-in to an empty dashboard, which is indistinguishable from lost work.
- * See `docs/sign-in-spec.md`.
+ * No institutional single sign-on and no social sign-in, unchanged. See
+ * `docs/decisions.md` and `docs/sign-in-spec-2.md`.
  */
-export async function signInWithMagicLink(formData: FormData) {
-  await requestSignInEmail(formData, { createAccountIfMissing: false })
-}
+export async function signInWithPassword(formData: FormData) {
+  const email = readEmail(formData)
+  const password = String(formData.get('password') ?? '')
 
-/**
- * Create an account for an address that does not have one.
- *
- * Reached only from the screen that says the address is unknown, so creating an
- * account is a second, deliberate submit rather than a side effect of a typo.
- * That single step is the whole fix for the fragmentation above.
- *
- * It is deliberately still open to anyone: the alternatives considered on
- * 2026-09-21 were an invite list, which puts a support task on the builder for
- * every new researcher, and a `@dal.ca` domain rule, which would lock out the
- * client contact on `futurecivics.ca`.
- */
-export async function createAccount(formData: FormData) {
-  await requestSignInEmail(formData, { createAccountIfMissing: true })
-}
-
-/**
- * The one place that asks Supabase for a sign-in email.
- *
- * Both entry points run through here so they cannot drift: the only difference
- * between signing in and signing up is the flag, and every failure is read the
- * same way.
- */
-async function requestSignInEmail(
-  formData: FormData,
-  { createAccountIfMissing }: { createAccountIfMissing: boolean },
-) {
-  const email = String(formData.get('email') ?? '')
-    .trim()
-    .toLowerCase()
-
-  if (!email || !email.includes('@')) {
-    redirect('/sign-in?error=invalid_email')
-  }
+  if (!email) redirect('/sign-in?error=invalid_email')
+  if (!password) redirect('/sign-in?error=missing_password')
 
   const supabase = await createClient()
-  if (!supabase) {
-    redirect('/sign-in?error=auth_not_configured')
+  if (!supabase) redirect('/sign-in?error=auth_not_configured')
+
+  const { error } = await supabase.auth.signInWithPassword({ email, password })
+
+  // Read from the error's shape, never from its wording. See
+  // lib/auth/send-outcome.ts for why that distinction has its own module.
+  switch (readSignInOutcome(error)) {
+    case 'signed_in':
+      redirect('/dashboard')
+    case 'service_unavailable':
+      // Must never surface as a rejected password. A researcher told their
+      // password is wrong will retype a password they know is right until they
+      // conclude they are locked out.
+      redirect('/sign-in?error=service_unavailable')
+    case 'email_not_confirmed':
+      redirect('/sign-in?error=email_not_confirmed')
+    case 'rate_limited':
+      redirect('/sign-in?error=rate_limited')
+    case 'invalid_credentials':
+    case 'failed':
+      redirect('/sign-in?error=invalid_credentials')
   }
+}
+
+/**
+ * Creating an account, which is a deliberate act and never a side effect.
+ *
+ * The magic link used to create an account for any address typed into the
+ * sign-in box, silently, which is how one researcher reached this product under
+ * three addresses with work under two of them. Nothing failed when it happened:
+ * they signed in successfully, to an empty dashboard.
+ *
+ * Under a password that cannot recur, because signing in with an unknown address
+ * simply fails. **This is the only screen left that can catch someone opening a
+ * second account for themselves**, so it says plainly when the address already
+ * has one, rather than quietly doing nothing.
+ */
+export async function register(formData: FormData) {
+  const email = readEmail(formData)
+  const password = String(formData.get('password') ?? '')
+
+  if (!email) redirect('/register?error=invalid_email')
+  if (!password) redirect('/register?error=missing_password')
+
+  const supabase = await createClient()
+  if (!supabase) redirect('/register?error=auth_not_configured')
 
   // Derived from the request rather than from a variable, so a production email
   // can never point at localhost. See lib/app-url.ts.
   const origin = await getRequestOrigin()
 
-  const { error } = await supabase.auth.signInWithOtp({
+  const { data, error } = await supabase.auth.signUp({
     email,
-    options: {
-      emailRedirectTo: `${origin}/callback`,
-      shouldCreateUser: createAccountIfMissing,
-    },
+    password,
+    options: { emailRedirectTo: `${origin}/callback` },
   })
 
-  // Read from the error's shape, never from its wording. The wording is what the
-  // old version tested, and `fetch failed` matched nothing, so a database that
-  // was not answering sent researchers to the check-your-email screen. See
-  // lib/auth/send-outcome.ts.
-  switch (readSendOutcome(error)) {
-    case 'unknown_address':
-      // Not an error message. Its own screen, with the address read back and a
-      // way to create it.
-      redirect(`/sign-in?unknown=${encodeURIComponent(email)}`)
-    // falls through to redirect, which throws
+  switch (readRegisterOutcome(error, data?.user)) {
+    case 'confirm_email':
+      redirect(`/register?sent=${encodeURIComponent(email)}`)
+    case 'already_registered':
+      redirect(`/register?error=already_registered`)
+    case 'weak_password':
+      redirect('/register?error=weak_password')
     case 'rate_limited':
-      // The one failure where trying again immediately is exactly the wrong move.
-      redirect('/sign-in?error=rate_limited')
+      redirect('/register?error=rate_limited')
     case 'service_unavailable':
-      redirect('/sign-in?error=service_unavailable')
-    case 'unconfirmed':
-      // Supabase answered, but not with a confirmed send. We do not know the
-      // email failed: Supabase reports an error when the mail server does not
-      // answer in time, and Gmail's handshake is regularly slower than that
-      // window, so the message goes out and arrives while the app is still
-      // deciding. Claiming failure here is wrong, and it hides the six-digit
-      // code box, which only appears on the sent screen.
-      redirect(`/sign-in?sent=${encodeURIComponent(email)}&unconfirmed=1`)
-    case 'sent':
-      redirect(`/sign-in?sent=${encodeURIComponent(email)}`)
+      redirect('/register?error=service_unavailable')
+    case 'failed':
+      redirect('/register?error=invalid_credentials')
   }
 }
 
 /**
- * The six-digit code from the same email, typed in.
+ * Asking for a reset link.
  *
- * Two types are tried. A researcher signing in for the first time gets the
- * confirm-signup email, whose code Supabase types as `signup`; everyone else
- * gets the magic link email, typed `email`. Which one an address is on is not
- * something the sign-in screen knows, and asking would be a strange question, so
- * the wrong guess is simply retried. A failed verification does not spend the
- * code.
+ * This is the path the four accounts that predate passwords use to set one for
+ * the first time, which is why it is built properly rather than as an
+ * afterthought. It is also the path this product's own usage pattern guarantees
+ * will be used: researchers work hard for a week and come back months later,
+ * which is exactly when a password has been forgotten.
+ *
+ * The screen says the same thing whether or not the address has an account,
+ * because Supabase reports success either way and saying more would turn this
+ * form into a way of discovering who has an account.
  */
-export async function signInWithCode(formData: FormData) {
-  const email = String(formData.get('email') ?? '')
-    .trim()
-    .toLowerCase()
-  const code = String(formData.get('code') ?? '').replace(/[\s-]/g, '')
-
-  const back = `/sign-in?sent=${encodeURIComponent(email)}`
-
-  if (!email.includes('@')) {
-    redirect('/sign-in?error=invalid_email')
-  }
-  if (!/^\d{6}$/.test(code)) {
-    redirect(`${back}&error=invalid_code`)
-  }
+export async function requestPasswordReset(formData: FormData) {
+  const email = readEmail(formData)
+  if (!email) redirect('/forgot-password?error=invalid_email')
 
   const supabase = await createClient()
-  if (!supabase) {
-    redirect('/sign-in?error=auth_not_configured')
+  if (!supabase) redirect('/forgot-password?error=auth_not_configured')
+
+  const origin = await getRequestOrigin()
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${origin}/callback?next=/reset-password`,
+  })
+
+  if (isServiceUnavailable(error)) {
+    redirect('/forgot-password?error=service_unavailable')
+  }
+  if (error?.status === 429) {
+    redirect('/forgot-password?error=rate_limited')
   }
 
-  for (const type of ['email', 'signup'] as const) {
-    const { error } = await supabase.auth.verifyOtp({ email, token: code, type })
-    if (!error) {
-      redirect('/dashboard')
-    }
-    // The code is verified against the same project the link comes from, so an
-    // outage takes this box down too. During both outages it was the only thing
-    // on the screen that looked like it might still work, and it reported the
-    // researcher's correct code as not accepted. Stop on the first one rather
-    // than trying the other type against a server that is not answering.
-    if (isServiceUnavailable(error)) {
-      redirect(`${back}&error=service_unavailable`)
-    }
+  redirect(`/forgot-password?sent=${encodeURIComponent(email)}`)
+}
+
+/**
+ * Setting a new password, from the session the reset link established.
+ *
+ * `updateUser` needs a session, which is why this only works having arrived
+ * through the link. Someone who opens `/reset-password` cold has no session and
+ * is sent to ask for a link.
+ */
+export async function setNewPassword(formData: FormData) {
+  const password = String(formData.get('password') ?? '')
+  if (!password) redirect('/reset-password?error=missing_password')
+
+  const supabase = await createClient()
+  if (!supabase) redirect('/reset-password?error=auth_not_configured')
+
+  const { error } = await supabase.auth.updateUser({ password })
+
+  if (error) {
+    if (isServiceUnavailable(error)) redirect('/reset-password?error=service_unavailable')
+    if (error.code === 'weak_password') redirect('/reset-password?error=weak_password')
+    redirect('/reset-password?error=reset_failed')
   }
 
-  redirect(`${back}&error=code_failed`)
+  redirect('/dashboard')
 }
 
 /**
@@ -174,9 +184,7 @@ export async function signInWithCode(formData: FormData) {
  */
 export async function signInAsTestResearcher(formData: FormData) {
   if (!env.app.usePlaceholderAuth) {
-    throw new Error(
-      'Placeholder sign-in is disabled. Use the magic link flow now that Supabase auth is configured.',
-    )
+    throw new Error('Placeholder sign-in is disabled. Use the email and password flow.')
   }
 
   if (isSupabaseConfigured) {
@@ -225,18 +233,11 @@ export async function signOut() {
   redirect('/sign-in')
 }
 
-/**
- * The way out of a stuck sign-in.
- *
- * A browser holding a session cookie the server will no longer accept is in a
- * state nothing on the sign-in screen fixes, because signing out needs a session
- * to sign out of. This deletes what is there and asks for nothing. It is the
- * first thing to try when someone says they cannot get in on a computer where
- * they used to be able to.
- */
-export async function clearSession() {
-  await clearAuthCookies()
-  redirect('/sign-in?cleared=1')
+function readEmail(formData: FormData): string | null {
+  const email = String(formData.get('email') ?? '')
+    .trim()
+    .toLowerCase()
+  return email.includes('@') ? email : null
 }
 
 /**
