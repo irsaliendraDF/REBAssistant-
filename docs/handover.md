@@ -277,7 +277,7 @@ Full detail, including the transfer checklist, is in
 
 | Thing | Where | Note |
 |---|---|---|
-| Mailbox | `researchethicsboardassistant@gmail.com` | Dedicated to this project. Two-step verification on. Every sign-in link comes from here, so whoever controls it controls access to the product |
+| Mailbox | `researchethicsboardassistant@gmail.com` | Dedicated to this project. Two-step verification on. Confirmation and password-reset emails come from here, so whoever controls it can take over any account |
 | Supabase | Project `fzciyxuqzdashapkmcam`, `ca-central-1` | Region is permanent |
 | Anon key | Vercel, `.env.local`, every browser | Public by design. Row level security is the protection, not secrecy |
 | Service role key | Vercel only | **Bypasses row level security entirely.** Never in the repo, never in chat |
