@@ -94,22 +94,44 @@ reason there is no "generate my application" button anywhere in the product.
 
 ### Signing in
 
-Email only. A link that signs you in, and the same email carries a six-digit code
-that does the same job. Both are offered because a link is a single-use URL
-sitting in a university mailbox, and Microsoft 365, which Dalhousie runs, opens
-links in mail to check them. A link that has been opened once is spent. A typed
-code cannot be spent by something that reads the message, and it works when the
-email is read on a phone and the sign-in is happening on a laptop.
+Email and password. Four screens: sign in, create an account, forgot password,
+set a new password.
 
-**Signing in never creates an account.** An address with no account is told so,
-shown back to the person, and offered a separate deliberate button that creates
-one. Until 21 September 2026 any address typed into the box got an account
-silently, which is how one researcher reached this product under three addresses
-with work under two of them. See section 10.
+**Email is involved twice in an account's life, not once per sign-in.** Once to
+confirm a new account, and again if the password is forgotten. Every ordinary
+sign-in touches no inbox at all, which is the point of the design.
+
+**Confirmation stays on, deliberately.** Without it anyone could register an
+address they do not own, which on a research ethics tool is not a trade worth
+making.
+
+**Signing in never creates an account.** Creating one is its own screen and its
+own deliberate act. Until 21 September 2026 any address typed into the sign-in
+box got an account silently, which is how one researcher reached this product
+under three addresses with work under two of them. See section 10.
+
+**Supabase will not say whether an address has an account.** A wrong password and
+an address that never registered return the same `invalid_credentials`, on
+purpose, so that the sign-in box cannot be used to discover who has an account.
+It cannot be worked around, and the interface must not pretend otherwise: one
+message names both possibilities and offers the route out of each.
+
+That has a consequence worth understanding before changing anything here. **The
+only two places left that can catch someone opening a second account for
+themselves are the sign-up screen, which says applications stay with the address
+they were started under, and the empty dashboard, which names the signed-in
+address.** Neither is decoration.
 
 **Applications belong to the address they were started under.** There is no merge
 and no account linking, so the same person on two addresses has two sets of work.
-The dashboard names the signed-in address for exactly this reason.
+
+**What was removed, and why it is not missed.** The magic link, the six-digit
+code that existed because Microsoft 365 spends single-use links by scanning them,
+and the browser reset that existed because a link opened in the wrong browser
+cannot complete. Each was a correct fix for a real failure of links. A password
+has none of those failures. Links still arrive for confirmation and recovery, so
+the reasoning about why a link died is still in `lib/auth/callback.ts` and still
+applies to those two.
 
 ---
 
@@ -123,7 +145,7 @@ The dashboard names the signed-in address for exactly this reason.
 | Model | Anthropic, `claude-opus-5` |
 | Export | `docx` |
 | Hosting | Vercel |
-| Tests | Vitest, 346 passing |
+| Tests | Vitest, 351 passing |
 
 **The data layer is behind an interface.** Everything above it talks to a
 `DataStore` (`lib/data/types.ts`), never to Supabase directly. There are two
@@ -206,6 +228,12 @@ not arrive, and it reached the builder as a sign-in bug both times. Failures are
 now read from the error's shape in `lib/auth/send-outcome.ts`, and an outage says
 it is an outage.
 
+**Under a password this matters more than it did under the link.** A sleeping
+database would otherwise surface as a rejected password, and someone told their
+password is wrong will retype a password they know is right until they conclude
+they are locked out. The message clears the password explicitly, and there is a
+test asserting it does.
+
 This product's usage pattern is the worst possible fit for that behaviour.
 Researchers use an ethics tool hard for a week, submit, and return months later
 for the next study, so a project that sleeps after a week of quiet is asleep
@@ -280,7 +308,7 @@ makes a value visible to the browser, and omitting it fails silently and totally
 ```
 npm install
 npm run dev          # http://localhost:3000
-npm test             # 346 tests
+npm test             # 351 tests
 npm run build
 npm run ingest:plan  # what ingestion would do, touches nothing
 npm run ingest       # loads the knowledge base, needs the service role key
@@ -335,8 +363,9 @@ researcher asked to keep was left alone.
 debugged. Sign-in was reported as broken repeatedly between 26 August and
 21 September, and three separate fixes were shipped to it, before anybody counted
 the accounts and found that two of the reports had a different cause entirely. The fix is in `app/(auth)/actions.ts` and
-`lib/auth/send-outcome.ts`, and `docs/sign-in-spec.md` records what was
-considered and rejected.
+`lib/auth/send-outcome.ts`. `docs/sign-in-spec.md` records the first pass and
+`docs/sign-in-spec-2.md` the move to a password, both including what was
+considered and rejected, and what was verified rather than assumed.
 
 ---
 
