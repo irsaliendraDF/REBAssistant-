@@ -21,7 +21,14 @@ import type { SignInReason } from './callback'
  * anyway. Asserting it failed was wrong often enough to be a bug, so an
  * unconfirmed send now goes to the sent screen with a caveat instead.
  */
-export type SendReason = 'invalid_email' | 'rate_limited'
+/**
+ * `service_unavailable` was added after the second outage. Supabase not
+ * answering at all used to fall through to the sent screen, so a researcher was
+ * told to watch an inbox for a message that did not exist and could not arrive.
+ * Saying the service is down does not fix the outage. It stops the outage lying
+ * about itself, and it stops the next one reaching the builder as a sign-in bug.
+ */
+export type SendReason = 'invalid_email' | 'rate_limited' | 'service_unavailable'
 export type CodeReason = 'invalid_code' | 'code_failed'
 
 export type SignInMessageKey = SignInReason | SendReason | CodeReason
@@ -31,6 +38,12 @@ export const SIGN_IN_MESSAGES: Record<SignInMessageKey, string> = {
   auth_not_configured: 'Sign-in is not connected yet. Please try again shortly.',
   rate_limited:
     'Too many sign-in emails have been sent recently. Please wait a minute and try again.',
+  // Names the service rather than the inbox, because the inbox is the one place
+  // the answer is not. No timescale is promised: a paused project comes back in
+  // a couple of minutes, and nothing here can tell that apart from a longer
+  // outage, so it says who to tell instead.
+  service_unavailable:
+    'Sign-in is temporarily unavailable, so no email has gone out. This is usually brief. Please try again in a few minutes, and let us know if it is still happening.',
   missing_code: 'That sign-in link was incomplete. Please request a new one below.',
   link_expired:
     'That link has expired or had already been used. Links last an hour and work once. Request another below, or use the six-digit code from the email instead.',

@@ -101,3 +101,31 @@ describe('no unconfirmed send is reported as a failure', () => {
     expect(signInMessage('rate_limited')).toMatch(/wait a minute/i)
   })
 })
+
+describe('an outage says it is an outage', () => {
+  /**
+   * Added after the second paused-project outage, 2026-09-21. Supabase not
+   * answering used to fall through to the sent screen, so a researcher watched
+   * an inbox for a message that could not arrive, and it reached the builder as
+   * a sign-in bug rather than as an outage.
+   */
+  it('has a message for the service not answering', () => {
+    expect(signInMessage('service_unavailable')).toBeTruthy()
+  })
+
+  it('names the service rather than sending the researcher to their inbox', () => {
+    const message = signInMessage('service_unavailable') ?? ''
+    expect(message).toMatch(/unavailable/i)
+    expect(message).not.toMatch(/junk|spam|check your email|your inbox/i)
+  })
+
+  it('says plainly that nothing was sent, because here we do know that', () => {
+    // Distinct from an unconfirmed send, where the mail server simply did not
+    // answer in time and the message usually lands anyway.
+    expect(signInMessage('service_unavailable')).toMatch(/no email/i)
+  })
+
+  it('does not offer the browser reset, which cannot reach a server that is down', () => {
+    expect(resetHelps('service_unavailable')).toBe(false)
+  })
+})

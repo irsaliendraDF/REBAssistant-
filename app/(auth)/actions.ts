@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 import { getRequestOrigin } from '@/lib/app-url'
+import { isServiceUnavailable, readSendOutcome } from '@/lib/auth/send-outcome'
 import { PLACEHOLDER_COOKIE } from '@/lib/auth/session'
 import { env, isSupabaseConfigured } from '@/lib/env'
 import { createClient } from '@/lib/supabase/server'
@@ -22,8 +23,46 @@ import { createClient } from '@/lib/supabase/server'
  * them, and a link that has been opened once is spent. A typed code cannot be
  * spent by something that reads the message, and it works on a phone when the
  * link was asked for on a laptop, which the link itself cannot.
+ *
+ * Signing in never creates an account. `createAccount` below does, and only
+ * when the researcher asks for it on the screen that tells them there is no
+ * account for that address yet. Sign-in used to create one for any address typed
+ * in, silently, which is how one researcher ended up with three accounts and
+ * work under two of them. From her side that is not an error. It is a successful
+ * sign-in to an empty dashboard, which is indistinguishable from lost work.
+ * See `docs/sign-in-spec.md`.
  */
 export async function signInWithMagicLink(formData: FormData) {
+  await requestSignInEmail(formData, { createAccountIfMissing: false })
+}
+
+/**
+ * Create an account for an address that does not have one.
+ *
+ * Reached only from the screen that says the address is unknown, so creating an
+ * account is a second, deliberate submit rather than a side effect of a typo.
+ * That single step is the whole fix for the fragmentation above.
+ *
+ * It is deliberately still open to anyone: the alternatives considered on
+ * 2026-09-21 were an invite list, which puts a support task on the builder for
+ * every new researcher, and a `@dal.ca` domain rule, which would lock out the
+ * client contact on `futurecivics.ca`.
+ */
+export async function createAccount(formData: FormData) {
+  await requestSignInEmail(formData, { createAccountIfMissing: true })
+}
+
+/**
+ * The one place that asks Supabase for a sign-in email.
+ *
+ * Both entry points run through here so they cannot drift: the only difference
+ * between signing in and signing up is the flag, and every failure is read the
+ * same way.
+ */
+async function requestSignInEmail(
+  formData: FormData,
+  { createAccountIfMissing }: { createAccountIfMissing: boolean },
+) {
   const email = String(formData.get('email') ?? '')
     .trim()
     .toLowerCase()
@@ -45,33 +84,36 @@ export async function signInWithMagicLink(formData: FormData) {
     email,
     options: {
       emailRedirectTo: `${origin}/callback`,
-      shouldCreateUser: true,
+      shouldCreateUser: createAccountIfMissing,
     },
   })
 
-  if (error) {
-    // Rate limiting is worth naming: it is the one failure where trying again
-    // immediately is exactly the wrong move.
-    if (/rate|limit|too many/i.test(error.message)) {
+  // Read from the error's shape, never from its wording. The wording is what the
+  // old version tested, and `fetch failed` matched nothing, so a database that
+  // was not answering sent researchers to the check-your-email screen. See
+  // lib/auth/send-outcome.ts.
+  switch (readSendOutcome(error)) {
+    case 'unknown_address':
+      // Not an error message. Its own screen, with the address read back and a
+      // way to create it.
+      redirect(`/sign-in?unknown=${encodeURIComponent(email)}`)
+    // falls through to redirect, which throws
+    case 'rate_limited':
+      // The one failure where trying again immediately is exactly the wrong move.
       redirect('/sign-in?error=rate_limited')
-    }
-
-    // Everything else lands on the same screen as a success, with a caveat.
-    //
-    // We do not know that the email was not sent. Supabase reports a failure
-    // when it does not get a timely answer from the mail server, and Gmail's
-    // handshake is regularly slower than that window, so the message goes out
-    // and arrives while the app is saying it could not be sent. That happened
-    // in testing on 26 August 2026.
-    //
-    // Claiming it failed is worse than useless here. It is wrong, and it hides
-    // the six-digit code box, which only appears on the sent screen. So the
-    // researcher would receive a working email and be looking at a page that
-    // offered them no way to use it.
-    redirect(`/sign-in?sent=${encodeURIComponent(email)}&unconfirmed=1`)
+    case 'service_unavailable':
+      redirect('/sign-in?error=service_unavailable')
+    case 'unconfirmed':
+      // Supabase answered, but not with a confirmed send. We do not know the
+      // email failed: Supabase reports an error when the mail server does not
+      // answer in time, and Gmail's handshake is regularly slower than that
+      // window, so the message goes out and arrives while the app is still
+      // deciding. Claiming failure here is wrong, and it hides the six-digit
+      // code box, which only appears on the sent screen.
+      redirect(`/sign-in?sent=${encodeURIComponent(email)}&unconfirmed=1`)
+    case 'sent':
+      redirect(`/sign-in?sent=${encodeURIComponent(email)}`)
   }
-
-  redirect(`/sign-in?sent=${encodeURIComponent(email)}`)
 }
 
 /**
@@ -108,6 +150,14 @@ export async function signInWithCode(formData: FormData) {
     const { error } = await supabase.auth.verifyOtp({ email, token: code, type })
     if (!error) {
       redirect('/dashboard')
+    }
+    // The code is verified against the same project the link comes from, so an
+    // outage takes this box down too. During both outages it was the only thing
+    // on the screen that looked like it might still work, and it reported the
+    // researcher's correct code as not accepted. Stop on the first one rather
+    // than trying the other type against a server that is not answering.
+    if (isServiceUnavailable(error)) {
+      redirect(`${back}&error=service_unavailable`)
     }
   }
 

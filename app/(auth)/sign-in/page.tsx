@@ -4,7 +4,13 @@ import { resetHelps, signInMessage } from '@/lib/auth/messages'
 import { getSession } from '@/lib/auth/session'
 import { env, isSupabaseConfigured } from '@/lib/env'
 
-import { clearSession, signInAsTestResearcher, signInWithCode, signInWithMagicLink } from '../actions'
+import {
+  clearSession,
+  createAccount,
+  signInAsTestResearcher,
+  signInWithCode,
+  signInWithMagicLink,
+} from '../actions'
 
 export const metadata = {
   title: 'Sign in | Research Ethics Board Assistant',
@@ -20,6 +26,10 @@ export default async function SignInPage(props: PageProps<'/sign-in'>) {
   }
 
   const sentTo = readOne(search.sent)
+  // An address Supabase has no account for. Its own screen rather than a red
+  // error box: there is nothing wrong with the address, and the two things the
+  // researcher might want to do about it are both buttons.
+  const unknownAddress = readOne(search.unknown)
   const reason = readOne(search.error)
   const error = signInMessage(reason)
   const cleared = search.cleared === '1'
@@ -124,6 +134,33 @@ export default async function SignInPage(props: PageProps<'/sign-in'>) {
                 Send another link
               </button>
             </form>
+          </div>
+        </div>
+      ) : unknownAddress ? (
+        <div className="rounded-lg border border-line bg-surface p-5">
+          <p className="text-sm font-medium text-ink">No Account For That Address Yet</p>
+          <p className="mt-2 text-sm leading-relaxed text-muted">
+            Nothing is signed up under{' '}
+            <span className="font-medium text-ink">{unknownAddress}</span>, so no email has been
+            sent. If you have used Research Ethics Board Assistant before, it may be under a
+            different address: check that one first, because your saved work stays with the address
+            you signed up with.
+          </p>
+
+          <form action={createAccount} className="mt-5 border-t border-line pt-5">
+            <input type="hidden" name="email" value={unknownAddress} />
+            <button
+              type="submit"
+              className="rounded-md bg-forest px-4 py-2 text-sm font-medium text-white transition hover:bg-forest-dark"
+            >
+              Create An Account For This Address
+            </button>
+          </form>
+
+          <div className="mt-5 border-t border-line pt-4">
+            <a href="/sign-in" className="text-sm text-muted underline underline-offset-4">
+              Try a different email
+            </a>
           </div>
         </div>
       ) : signInUnavailable ? (
