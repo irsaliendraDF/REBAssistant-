@@ -55,15 +55,23 @@ Each stage is reported before the next begins.
 
 **Stage 1. Verify, write nothing. Done 2026-09-21, results below.**
 
-**Stage 2. The sign-in flow.** `signInWithMagicLink` passes
-`shouldCreateUser: false`, a new `unknown_address` state on the sign-in screen,
-and `createAccount` as a separate server action. Tests for each branch.
+**Stage 2. The sign-in flow. Done 2026-09-21, not deployed.**
+`requestSignInEmail` is now the single place that asks Supabase for an email,
+with `shouldCreateUser` the only difference between signing in and signing up.
+The unknown-address screen lives on `?unknown=`, and `createAccount` is the
+separate submit behind it. Failures are read by `lib/auth/send-outcome.ts` from
+the error's shape, and the message regex is gone. The six-digit code path gets
+the same outage detection, because it is verified against the same project.
+346 tests pass. Checked against the live project on localhost: the
+unknown-address screen renders, no account was created and no email sent, and
+the outage screen does not offer the browser reset.
 
 **Stage 3. Say which account you are in.** The dashboard and the app shell name
 the signed-in address. An empty dashboard under the wrong address currently
 looks identical to lost work. **Cuttable if Irene wants stage 2 alone.**
 
 **Stage 4. Deploy and verify on production**, with the callback probe below.
+**Not done. Production is still the 26 August build.**
 
 ## Stage 1 results, 2026-09-21
 
