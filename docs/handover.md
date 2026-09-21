@@ -2,7 +2,8 @@
 
 **For:** Future Civics
 **Built by:** DigitalFlow Consulting
-**Status at this document:** internal test build, 6 August 2026
+**Status at this document:** 21 September 2026. Built, deployed and in
+testing with the client. Not yet handed over.
 **Live:** https://reb-assistant.vercel.app
 
 This document is written for someone who has never seen this project and has to
@@ -91,6 +92,25 @@ triage → intake → method check → draft → gap analysis → complete
 Nothing in this sequence moves on its own. That is guardrail 3, and it is the
 reason there is no "generate my application" button anywhere in the product.
 
+### Signing in
+
+Email only. A link that signs you in, and the same email carries a six-digit code
+that does the same job. Both are offered because a link is a single-use URL
+sitting in a university mailbox, and Microsoft 365, which Dalhousie runs, opens
+links in mail to check them. A link that has been opened once is spent. A typed
+code cannot be spent by something that reads the message, and it works when the
+email is read on a phone and the sign-in is happening on a laptop.
+
+**Signing in never creates an account.** An address with no account is told so,
+shown back to the person, and offered a separate deliberate button that creates
+one. Until 21 September 2026 any address typed into the box got an account
+silently, which is how one researcher reached this product under three addresses
+with work under two of them. See section 10.
+
+**Applications belong to the address they were started under.** There is no merge
+and no account linking, so the same person on two addresses has two sets of work.
+The dashboard names the signed-in address for exactly this reason.
+
 ---
 
 ## 4. The stack
@@ -103,7 +123,7 @@ reason there is no "generate my application" button anywhere in the product.
 | Model | Anthropic, `claude-opus-5` |
 | Export | `docx` |
 | Hosting | Vercel |
-| Tests | Vitest, 245 passing |
+| Tests | Vitest, 346 passing |
 
 **The data layer is behind an interface.** Everything above it talks to a
 `DataStore` (`lib/data/types.ts`), never to Supabase directly. There are two
@@ -172,12 +192,19 @@ will not tolerate.
 omissions by rule. A model pass would catch more. The method check was upgraded
 from rules to model reasoning; gap analysis has not been.
 
-**The Supabase project pauses itself when idle, and this has already taken the
-app down once.** On 26 August 2026 nobody could sign in. The screen said the
-sign-in email could not be sent, which points at the mail setup and is a red
-herring: the project had paused after a stretch of inactivity, and a paused
-project refuses every API call, including the one that sends the email. Restoring
-it fixes it and loses no data.
+**The Supabase project pauses itself when idle, and this has taken the app down
+twice.** On 26 August 2026 and again over the weekend of 19 September 2026,
+nobody could sign in. Restoring the project fixes it and loses no data, but it
+takes a couple of minutes, during which the host answers `521, web server is
+down`. That 521 is the expected middle state, not a second fault.
+
+**The app no longer hides it.** Until 21 September, a project that was not
+answering produced the "check your email" screen, because failures were read by
+matching the error's wording and an unreachable project produces `fetch failed`,
+which matched nothing. So researchers watched an inbox for a message that could
+not arrive, and it reached the builder as a sign-in bug both times. Failures are
+now read from the error's shape in `lib/auth/send-outcome.ts`, and an outage says
+it is an outage.
 
 This product's usage pattern is the worst possible fit for that behaviour.
 Researchers use an ethics tool hard for a week, submit, and return months later
@@ -186,9 +213,19 @@ every time somebody comes back. **Move it to a paid Supabase plan before real
 researchers are on it.** There is nothing to build; it is a billing decision, and
 it is the cheapest reliability improvement available here.
 
-The symptom to recognise: sign-in reports a send failure, and the dashboard shows
-the project paused. Restore, wait a few minutes, done. Do not start with the
-Gmail App Password, as this project did.
+**The one-request test for whether the database is up**, which costs a minute
+rather than a morning:
+
+```
+curl -s -o /dev/null -w "%{redirect_url}\n" \
+  "https://reb-assistant.vercel.app/callback?token_hash=probe000000000000000000000000000000&type=email"
+```
+
+`error=link_expired` means Supabase is answering and the problem is elsewhere.
+`error=exchange_failed` means it is not: check whether the project is paused. It
+sends no email and creates nothing.
+
+Do not start with the Gmail App Password, as this project did.
 
 **Email is on a Gmail account, not a domain.** Fine for a test group, wrong for a
 cohort: it caps around 500 messages a day. When it moves, use a **Future Civics**
@@ -243,7 +280,7 @@ makes a value visible to the browser, and omitting it fails silently and totally
 ```
 npm install
 npm run dev          # http://localhost:3000
-npm test             # 245 tests
+npm test             # 346 tests
 npm run build
 npm run ingest:plan  # what ingestion would do, touches nothing
 npm run ingest       # loads the knowledge base, needs the service role key
@@ -273,7 +310,7 @@ kept current with the code, in the same commits.
 
 ## 10. Known history worth stating
 
-Two things a new maintainer would otherwise rediscover the hard way.
+Three things a new maintainer would otherwise rediscover the hard way.
 
 **An Anthropic API key was exposed in a chat transcript during the build.** It
 was rotated the same day and the exposed key was verified dead. Noted because a
@@ -284,6 +321,21 @@ worked.** That was clock skew: Supabase stamps the session token with its own
 clock, and a validating server fractionally behind reads the timestamp as the
 future. `lib/data/clock-skew.ts` waits it out. If similar symptoms appear
 elsewhere, that is the first thing to check.
+
+**One researcher reached this product under three email addresses.** Found on
+21 September 2026 by counting the accounts, after a sign-in complaint that turned
+out to be the paused project above. Sign-in created an account for any address
+typed into it, and nothing failed when it did: the person signed in successfully,
+to an empty dashboard, which from their side is indistinguishable from lost work.
+Two of the three were deleted at the client's request, with a snapshot of the
+database taken first, and the work under the address they are keeping was left
+alone.
+
+**The lesson is not about that researcher.** A sign-in that cannot fail cannot be
+debugged, and this one was reported as a login problem for a month before anybody
+counted the rows. The fix is in `app/(auth)/actions.ts` and
+`lib/auth/send-outcome.ts`, and `docs/sign-in-spec.md` records what was
+considered and rejected.
 
 ---
 
