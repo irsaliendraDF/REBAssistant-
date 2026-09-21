@@ -106,10 +106,20 @@ for them and sent to them.
 
 **Stage 1. Verify, write nothing. Done 2026-09-21**, results above.
 
-**Stage 2. The four screens and the actions behind them**, with the removals
-listed above and tests per branch.
+**Stage 2. The four screens and the actions behind them. Done 2026-09-21.**
+Sign in, create an account, forgot password, set a new password, sharing one
+frame in `components/auth-page.tsx`. Out went the six-digit code box, the browser
+reset, and the four messages for four ways a link dies. Checked against the live
+database: a real account with a wrong password gives the right message, no
+account was created and no email sent.
 
-**Stage 3. The reduced callback**, handling confirmation and recovery only.
+**Stage 3. The reduced callback. Done 2026-09-21.** Two links reach it, handled
+identically because they are the same operation, and only the destination
+differs. **A recovery link lands on the password form whether or not `next`
+survived the mail client**, because landing it on the dashboard would leave the
+person signed in holding the password they came to change. `magiclink` is gone
+from the link types.
 
-**Stage 4. Deploy, verify on production, then tell the three people to set a
-password.**
+**Stage 4. Deploy, verify on production, then the three of them set a password
+through "Forgot your password".** That last part is the only one that needs
+anybody told anything, and it is a message from Irene rather than a build step.
