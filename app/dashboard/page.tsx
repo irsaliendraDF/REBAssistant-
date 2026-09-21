@@ -64,6 +64,17 @@ export default async function DashboardPage() {
             Starting one opens a few questions about the shape of your research. It takes a couple
             of minutes, and you can leave and come back at any point.
           </p>
+          {/* The one screen where naming the account earns its space. An empty
+              dashboard under a second address looks exactly like lost work, and
+              that is what it looked like to a researcher who had reached this
+              product under three addresses. */}
+          {session?.email ? (
+            <p className="mx-auto mt-5 max-w-md border-t border-line pt-4 text-xs leading-relaxed text-faint">
+              Signed in as <span className="font-medium text-muted">{session.email}</span>.
+              Applications stay with the address they were started under, so if you have used this
+              before and expected to see something here, try signing in with that address.
+            </p>
+          ) : null}
         </div>
       ) : (
         <ul className="space-y-3">

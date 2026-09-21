@@ -21,6 +21,11 @@ export function AppShell({
   children: ReactNode
 }) {
   const name = profileName?.trim() || session.displayName
+  // Shown beside the name, not instead of it, and only when it adds something.
+  // A researcher with more than one account sees the same saved name on both,
+  // so the name alone cannot answer "which account am I in", which is the
+  // question an unexpectedly empty dashboard makes people ask.
+  const signedInAs = session.email && session.email !== name ? session.email : null
 
   return (
     <div className="min-h-dvh bg-surface">
@@ -45,7 +50,12 @@ export function AppShell({
               className="flex items-center gap-2 rounded-md px-2 py-1 text-xs text-muted transition hover:bg-surface-2 hover:text-ink"
             >
               <PersonIcon />
-              <span>{name}</span>
+              <span className="flex flex-col leading-tight">
+                <span>{name}</span>
+                {signedInAs ? (
+                  <span className="text-[11px] text-faint">{signedInAs}</span>
+                ) : null}
+              </span>
             </a>
 
             {/* Nothing to sign out of in review mode, so no button to offer. */}
