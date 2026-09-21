@@ -327,13 +327,14 @@ elsewhere, that is the first thing to check.
 out to be the paused project above. Sign-in created an account for any address
 typed into it, and nothing failed when it did: the person signed in successfully,
 to an empty dashboard, which from their side is indistinguishable from lost work.
-Two of the three were deleted at the client's request, with a snapshot of the
-database taken first, and the work under the address they are keeping was left
-alone.
+Two of the three were deleted on 21 September, with a full snapshot of the
+database taken to disk first, and the work under the Dalhousie address the
+researcher asked to keep was left alone.
 
 **The lesson is not about that researcher.** A sign-in that cannot fail cannot be
-debugged, and this one was reported as a login problem for a month before anybody
-counted the rows. The fix is in `app/(auth)/actions.ts` and
+debugged. Sign-in was reported as broken repeatedly between 26 August and
+21 September, and three separate fixes were shipped to it, before anybody counted
+the accounts and found that two of the reports had a different cause entirely. The fix is in `app/(auth)/actions.ts` and
 `lib/auth/send-outcome.ts`, and `docs/sign-in-spec.md` records what was
 considered and rejected.
 
