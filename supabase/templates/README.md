@@ -44,32 +44,45 @@ Invite user and Change Email Address are still never triggered.
    - Reset Password: `Set a new password for Research Ethics Board Assistant`
 
 **Until step 4 is done, the reset email is Supabase's unstyled default.** It does
-not name the tool, it does not carry the six-digit code, and it is the shape of
-message people delete. Somebody reporting that no email arrived may well have
-received that one.
+not name the tool, and it is the shape of message people delete. Somebody
+reporting that no email arrived may well have received that one.
 
-Send yourself one afterwards to check it. The `{{ .ConfirmationURL }}`
-placeholder is filled in by Supabase; if you open these files directly in a
-browser you will see the placeholder text instead of a link, which is correct.
+**Both templates changed again on 22 September and both need re-pasting**, even
+if you pasted one earlier the same day. See below for what changed.
 
-## The six-digit code
+Send yourself one afterwards to check it. The placeholders are filled in by
+Supabase; if you open these files directly in a browser you will see the
+placeholder text rather than a link, which is correct.
 
-Every template shows a code as well as a link, from the `{{ .Token }}`
-placeholder. **Re-paste every template into the dashboard**, or the code will not appear in
-the mail people receive and the code box on the page will have nothing to accept.
+## Why the link is a token_hash link, and where the code went
 
-It is there because a link is fragile in a university mailbox in two ways that
-have nothing to do with the researcher:
+Both templates build their own link:
 
-- A magic link completes only in the browser that asked for it. Open the email on
-  a phone after requesting the link on a laptop and it cannot work, however fast
-  you click. Shakara reported being unable to get in after signing in once; this
-  is one of the two things that produces that.
-- Microsoft 365, which Dalhousie runs, follows links in mail to check them. A
-  link that works once can be spent before anyone clicks it.
+```
+{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=recovery
+```
 
-A typed code has neither problem. The link stays first, because it is one click
-when it works.
+rather than using `{{ .ConfirmationURL }}`. **The difference is that a
+`ConfirmationURL` completes only in the browser that asked for it**, because the
+proof of the request is a cookie in that browser. Open the email on a phone after
+asking on a laptop and it cannot work, however fast you click. A `token_hash`
+link carries its own proof, so it completes anywhere.
+
+`{{ .RedirectTo }}` is used rather than `{{ .SiteURL }}` because the app derives
+its own origin from the request and passes it in, so there is no dashboard
+setting to get wrong. The `&` is correct for recovery, where the app already
+appends `?next=`; confirm-signup uses `?` because its redirect has no query
+string.
+
+**The six-digit code these templates used to carry is gone**, as of 22 September.
+It existed for the browser-binding problem above, which the link form now solves
+properly, and for a second reason: that Microsoft 365, which Dalhousie runs,
+follows links in mail and can spend a one-use link before anyone clicks it.
+**That one was never observed here.** It went into the repository on 24 August as
+one of four possible explanations for a report whose actual cause turned out to
+be a missing session refresh, and it was then repeated in eight files as though
+it had been established. If a spent-on-arrival link is ever actually
+demonstrated, the code is in the history and `docs/decisions.md` says so.
 
 ## What these templates fix, and what they do not
 

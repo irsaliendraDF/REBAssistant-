@@ -37,8 +37,6 @@ export type CredentialReason =
   | 'rate_limited'
   | 'service_unavailable'
   | 'reset_failed'
-  | 'invalid_code'
-  | 'code_failed'
 
 export type SignInMessageKey = SignInReason | CredentialReason
 
@@ -76,11 +74,6 @@ export const SIGN_IN_MESSAGES: Record<SignInMessageKey, string> = {
 
   reset_failed:
     'That password could not be saved. Request a new reset link below and try once more.',
-
-  invalid_code: 'A reset code is six digits. Please check the email and try again.',
-
-  code_failed:
-    'That code was not accepted. Codes last an hour and work once, so use the newest email you received, or request a fresh one below.',
 
   // Confirmation and password-reset links still arrive by email, so these stay.
   missing_code: 'That link was incomplete. Please request a new one.',

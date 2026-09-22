@@ -342,11 +342,25 @@ to request another link is a loop they cannot get out of. The reasons live in
 `lib/auth/callback.ts` and the wording in `lib/auth/messages.ts`, with a test
 that every reason has something to say.
 
-**The email carries a six-digit code as well as a link.** Not a nicety: a link
-completes only in the browser that requested it, and Microsoft 365, which
-Dalhousie runs, follows links in mail to check them, which can spend a one-use
-link before the researcher clicks it. A typed code survives both. The link is
-still offered first because it is one click when it works.
+**The email carried a six-digit code as well as a link, and no longer does.**
+Superseded 22 September 2026, and the reasoning is worth keeping because it was
+half right.
+
+The code was added on 24 August for two stated reasons. **The first is real and
+provable:** a `?code=` link carries its proof in a cookie in the browser that
+asked for it, so opening it anywhere else cannot complete. **The second was
+never observed here:** that Microsoft 365, which Dalhousie runs, follows links in
+mail and spends them before the researcher clicks. That was offered as one of
+four things that could produce the report being investigated that day, alongside
+the cause actually found, which was the missing `proxy.ts` session refresh. It
+then got repeated in eight files in a voice that reads as established.
+
+**The emails now send a `token_hash` link instead of `{{ .ConfirmationURL }}`.**
+It carries its own proof, so it completes on any device, which removes the real
+failure at the source rather than working around it. With that gone, the only
+thing the code still guarded against was the claim nobody had tested, so it went
+too. **If a spent-on-arrival link is ever actually demonstrated, this is the
+decision to reopen**, and the code is in the history.
 
 **The callback accepts a token hash as well as a code.** That is the link form
 that carries its own proof and therefore works on a second device. Accepting both

@@ -126,12 +126,17 @@ address.** Neither is decoration.
 and no account linking, so the same person on two addresses has two sets of work.
 
 **What was removed, and why it is not missed.** The magic link, the six-digit
-code that existed because Microsoft 365 spends single-use links by scanning them,
-and the browser reset that existed because a link opened in the wrong browser
-cannot complete. Each was a correct fix for a real failure of links. A password
-has none of those failures. Links still arrive for confirmation and recovery, so
-the reasoning about why a link died is still in `lib/auth/callback.ts` and still
-applies to those two.
+code, and the browser reset. Each was a fix for a way a sign-in link can fail,
+and a password fails in none of those ways.
+
+**The two emails that remain send a `token_hash` link**, which carries its own
+proof rather than depending on a cookie in the browser that asked for it, so a
+confirmation or reset opened on a phone completes normally. That was the one
+link failure anybody here could demonstrate. A second reason often given, that
+Dalhousie's mail spends single-use links by scanning them, **was written into
+this repository as established and never actually observed**; see
+`docs/decisions.md`. The reasoning about why a link died is still in
+`lib/auth/callback.ts` and still applies to those two emails.
 
 ---
 

@@ -5,7 +5,7 @@ import { signInMessage } from '@/lib/auth/messages'
 import { getSession } from '@/lib/auth/session'
 import { isSupabaseConfigured } from '@/lib/env'
 
-import { requestPasswordReset, verifyResetCode } from '../actions'
+import { requestPasswordReset } from '../actions'
 
 export const metadata = {
   title: 'Reset your password | Research Ethics Board Assistant',
@@ -40,41 +40,12 @@ export default async function ForgotPasswordPage(props: PageProps<'/forgot-passw
             from a Gmail address, which university mail systems often treat as junk.
           </p>
 
-          {/* The link is fragile in a university mailbox in two ways that have
-              nothing to do with the researcher: Microsoft 365, which Dalhousie
-              runs, follows links in mail to check them and spends them, and a
-              link completes only in the browser that asked for it. Both killed
-              the magic link. The code has neither problem. */}
-          <form action={verifyResetCode} className="mt-5 border-t border-line pt-5">
-            <input type="hidden" name="email" value={sentTo} />
-            <label htmlFor="code" className="block text-sm font-medium text-ink">
-              Or enter the six-digit code from that email
-            </label>
-            <p className="mt-1 text-xs leading-relaxed text-muted">
-              Use this if the link does not work, or if you are reading the email on a different
-              device from this one.
-            </p>
-            <div className="mt-3 flex gap-2">
-              <input
-                id="code"
-                name="code"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                pattern="[0-9]*"
-                maxLength={7}
-                placeholder="123456"
-                className="w-32 rounded-md border border-line px-3 py-2 font-mono text-sm tracking-widest text-ink outline-none focus:border-forest"
-              />
-              <button
-                type="submit"
-                className="rounded-md bg-forest px-4 py-2 text-sm font-medium text-white transition hover:bg-forest-dark"
-              >
-                Continue
-              </button>
-            </div>
-          </form>
-
-          <div className="mt-5 flex flex-wrap items-center gap-4 border-t border-line pt-4">
+          {/* No six-digit code here any more. The link in that email carries its
+              own proof rather than depending on a cookie in this browser, so it
+              completes wherever it is opened, including on a phone. That was the
+              one failure the code existed to work around that anybody could
+              demonstrate. See supabase/templates/README.md. */}
+          <div className="mt-5 flex flex-wrap items-center gap-4 border-t border-line pt-5">
             <a href="/sign-in" className="text-sm text-muted underline underline-offset-4">
               Back to sign in
             </a>

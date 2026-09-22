@@ -8,11 +8,13 @@ supersedes for the sign-in mechanism and leaves standing for everything else.
 
 ## Why this replaces the magic link
 
-The magic link accumulated remedies. A six-digit code because Microsoft 365
-spends single-use links by scanning them. A browser-reset button because a link
-opened in the wrong browser cannot complete. Separate messages for four different
-ways a link can die. Each one was a correct fix for a real failure, and together
-they are a sign-in screen that needs explaining.
+The magic link accumulated remedies. A six-digit code, a browser-reset button,
+and separate messages for four different ways a link can die. Each was a fix for
+a way a link fails, and together they are a sign-in screen that needs explaining.
+
+**One of those reasons did not survive checking.** The code was justified partly
+by Microsoft 365 spending single-use links by scanning them, which was written
+down as established on 24 August and never observed here. See `docs/decisions.md`.
 
 A password has none of those failures. It cannot be spent by a mail scanner,
 it does not care which browser it is typed into, and it does not need an inbox at

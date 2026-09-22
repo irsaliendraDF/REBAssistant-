@@ -17,12 +17,10 @@ import { createClient } from '@/lib/supabase/server'
  * Sign-in: email and password.
  *
  * Replaced the magic link on 21 September 2026, by Irene's decision. The link
- * had accumulated a remedy for each of its failure modes: a six-digit code
- * because Microsoft 365, which Dalhousie runs, spends single-use links by
- * scanning them; a browser reset because a link opened in the wrong browser
- * cannot complete; four separate messages for four ways a link dies. Each was a
- * correct fix for a real failure, and together they were a sign-in screen that
- * needed explaining. A password has none of those failures.
+ * had accumulated a remedy for each of its failure modes: a browser reset, a
+ * six-digit code, and four separate messages for four ways a link dies.
+ * Together they were a sign-in screen that needed explaining, and a password
+ * has none of those failures.
  *
  * Email has not disappeared. It moved from every sign-in to twice in an
  * account's life: confirming it, and resetting a forgotten password. Confirmation
@@ -147,44 +145,6 @@ export async function requestPasswordReset(formData: FormData) {
   }
 
   redirect(`/forgot-password?sent=${encodeURIComponent(email)}`)
-}
-
-/**
- * The six-digit code from the reset email, typed in.
- *
- * Not a nicety, and the reason it exists is written down twice already in this
- * repository. A reset link is a single-use URL sitting in a university mailbox:
- * Microsoft 365, which Dalhousie runs, follows links in mail to check them, and
- * a link that has been followed once is spent before anyone clicks it. The link
- * also completes only in the browser that asked for it, so reading the email on
- * a phone after asking on a laptop cannot work.
- *
- * Both of those killed the magic link. Moving to a password moved them onto the
- * reset path rather than removing them, and the reset path shipped on
- * 21 September without this. A typed code has neither problem.
- */
-export async function verifyResetCode(formData: FormData) {
-  const email = readEmail(formData)
-  const code = String(formData.get('code') ?? '').replace(/[\s-]/g, '')
-
-  if (!email) redirect('/forgot-password?error=invalid_email')
-
-  const back = `/forgot-password?sent=${encodeURIComponent(email)}`
-  if (!/^\d{6}$/.test(code)) redirect(`${back}&error=invalid_code`)
-
-  const supabase = await createClient()
-  if (!supabase) redirect('/forgot-password?error=auth_not_configured')
-
-  const { error } = await supabase.auth.verifyOtp({ email, token: code, type: 'recovery' })
-
-  if (error) {
-    if (isServiceUnavailable(error)) redirect(`${back}&error=service_unavailable`)
-    redirect(`${back}&error=code_failed`)
-  }
-
-  // Verified, so there is now a session, which is what lets the next screen
-  // change the password.
-  redirect('/reset-password')
 }
 
 /**
