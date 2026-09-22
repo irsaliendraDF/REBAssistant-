@@ -37,6 +37,7 @@ export type CredentialReason =
   | 'rate_limited'
   | 'service_unavailable'
   | 'reset_failed'
+  | 'same_password'
 
 export type SignInMessageKey = SignInReason | CredentialReason
 
@@ -72,8 +73,11 @@ export const SIGN_IN_MESSAGES: Record<SignInMessageKey, string> = {
   service_unavailable:
     'Sign-in is temporarily unavailable, and this is nothing to do with your password. This is usually brief. Please try again in a few minutes, and let us know if it is still happening.',
 
+  same_password:
+    'That is the password you already have. Please choose a different one, or go back and sign in with it.',
+
   reset_failed:
-    'That password could not be saved. Request a new reset link below and try once more.',
+    'That password could not be saved. Send yourself a new link below and try once more.',
 
   // Confirmation and password-reset links still arrive by email, so these stay.
   missing_code: 'That link was incomplete. Please request a new one.',

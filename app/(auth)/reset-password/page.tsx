@@ -57,15 +57,24 @@ export default async function ResetPasswordPage(props: PageProps<'/reset-passwor
           name="password"
           type="password"
           label="New password"
-          hint="At least eight characters."
+          hint="At least six characters. Longer is better."
           autoComplete="new-password"
         />
         <SubmitButton>Save Password</SubmitButton>
       </form>
 
+      {/* There used to be a "skip and go to your applications" link here. It was
+          true, in that the recovery link has already signed them in, and it was
+          the worst possible advice: most people reaching this screen are setting
+          a password for the first time, and skipping leaves them with no
+          password and locked out again on their next visit. The way out is the
+          sign-in screen, not the dashboard. */}
       <AuthLinks>
-        <a href="/dashboard" className="underline underline-offset-4 hover:text-ink">
-          Skip and go to your applications
+        <a href="/sign-in" className="underline underline-offset-4 hover:text-ink">
+          Back to sign in
+        </a>
+        <a href="/forgot-password" className="underline underline-offset-4 hover:text-ink">
+          Send a new link
         </a>
       </AuthLinks>
     </AuthPage>

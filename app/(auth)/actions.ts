@@ -166,10 +166,30 @@ export async function setNewPassword(formData: FormData) {
   if (error) {
     if (isServiceUnavailable(error)) redirect('/reset-password?error=service_unavailable')
     if (error.code === 'weak_password') redirect('/reset-password?error=weak_password')
+    // Supabase refuses a password identical to the current one. Worth its own
+    // sentence: the catch-all told people to request a new link, which would
+    // have sent them round the same loop to the same refusal.
+    if (error.code === 'same_password') redirect('/reset-password?error=same_password')
     redirect('/reset-password?error=reset_failed')
   }
 
-  redirect('/dashboard')
+  // Sign out the recovery session and send them to sign in with what they just
+  // set, rather than dropping them into the dashboard on the session the email
+  // link created.
+  //
+  // Two reasons. It proves the password works, immediately, while they still
+  // remember typing it, instead of at some point months from now. And the
+  // sign-in screen is unreachable while a session is live, because it redirects
+  // a signed-in visitor to the dashboard, so without this there is no way to
+  // show them the confirmation at all.
+  try {
+    await supabase.auth.signOut()
+  } catch {
+    // Failing to sign out is not a reason to keep them signed in.
+  }
+  await clearAuthCookies()
+
+  redirect('/sign-in?password_set=1')
 }
 
 /**

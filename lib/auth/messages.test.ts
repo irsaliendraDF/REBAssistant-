@@ -26,6 +26,7 @@ const EVERY_CREDENTIAL_REASON: CredentialReason[] = [
   'rate_limited',
   'service_unavailable',
   'reset_failed',
+  'same_password',
 ]
 
 describe('sign-in messages', () => {
@@ -82,7 +83,7 @@ describe('sign-in messages', () => {
     // instruction in it leaves them exactly where they were.
     for (const [reason, message] of Object.entries(SIGN_IN_MESSAGES)) {
       expect(
-        /try again|request|check|wait|reset|sign in|create an account|choose|enter/i.test(message),
+        /try again|try once more|request|send|check|wait|reset|sign in|create an account|choose|enter/i.test(message),
         reason,
       ).toBe(true)
     }

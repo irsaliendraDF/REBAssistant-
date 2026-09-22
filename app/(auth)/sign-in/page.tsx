@@ -20,6 +20,7 @@ export default async function SignInPage(props: PageProps<'/sign-in'>) {
   }
 
   const error = signInMessage(readOne(search.error))
+  const passwordSet = search.password_set === '1'
   const usePlaceholder = env.app.usePlaceholderAuth && !isSupabaseConfigured
   const signInUnavailable = !usePlaceholder && !isSupabaseConfigured
 
@@ -38,6 +39,13 @@ export default async function SignInPage(props: PageProps<'/sign-in'>) {
 
   return (
     <AuthPage error={error}>
+      {passwordSet ? (
+        <p className="mb-6 rounded-lg border border-olive/60 bg-lime-soft/40 px-4 py-3 text-sm leading-relaxed text-ink">
+          <span className="font-medium">Your password is saved.</span> Sign in with it below, and
+          you will not need an email to get in again.
+        </p>
+      ) : null}
+
       {/* No "your email is confirmed" banner here. Confirming a link signs the
           researcher in, so they land on the dashboard and never see this screen
           again. A banner nobody can reach is a promise the app cannot keep. */}
