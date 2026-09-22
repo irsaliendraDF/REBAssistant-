@@ -102,6 +102,16 @@ plausible article numbers into a research ethics application is worse than one
 citing nothing, because the researcher cannot tell the difference and the Board
 can.
 
+**This rule is about the gap engine, and the source behind a citation does not
+have to be TCPS 2 itself.** Clarified 22 September 2026, after a review nearly
+stripped four article numbers on the grounds that TCPS 2 is not in the knowledge
+base. It is not, and those citations are still sound, because they are quoted
+from documents that are: the Dalhousie form says *"Consult TCPS2 Articles 9.1 and
+9.2"* at 2.13 and *"see TCPS2 Article 3.13"* at 2.5, and the guidelines repeat
+the second. **Quoting a source we hold is the opposite of inventing one.** The
+test is whether a chunk in `kb_chunks` carries the number, which is one query,
+not whether the number looks plausible.
+
 **The AI-use disclosure is generated from what was actually drafted**, not
 templated. Today it states plainly that no section was AI-generated, because none
 was. A disclosure that overclaims or stays silent teaches a Board that
