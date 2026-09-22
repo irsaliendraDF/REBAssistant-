@@ -5,7 +5,7 @@ import {
   wordLimitFor,
   type FormSection,
 } from '@/lib/form/dalhousie-sections'
-import { allQuestions } from '@/lib/intake/questions'
+import { allQuestions, visibleSections } from '@/lib/intake/questions'
 import { boardDisclosure } from '@/lib/disclosure/text'
 import { suggestCompanionDocuments, type CompanionDocument } from '@/lib/documents/companions'
 import type { AnswerMap, Draft, Project } from '@/lib/data/types'
@@ -103,7 +103,11 @@ export function assembleDraft({ project, answers, drafts, now }: AssembleInput):
   const sources = sourcesBySection(answers)
   const bySection = new Map((drafts ?? []).map((draft) => [draft.formSection, draft]))
 
-  const sections = FORM_SECTIONS.map((section) =>
+  const applicable = applicableSections(answers)
+
+  const sections = FORM_SECTIONS.filter(
+    (section) => !section.conditional || applicable.has(section.number),
+  ).map((section) =>
     buildSection(section, sources[section.number] ?? [], flags, project, bySection.get(section.number)),
   )
 
@@ -129,6 +133,40 @@ export function assembleDraft({ project, answers, drafts, now }: AssembleInput):
       .map((section) => section.number),
     companionDocuments: suggestCompanionDocuments(project, answers),
   }
+}
+
+/**
+ * Which conditional form sections this study actually has.
+ *
+ * `conditional` was declared on the form sections and read by the intake list,
+ * which correctly adds and removes 2.8, 2.14 and 2.15 as their gates are
+ * answered. Assembly ignored it until 22 September 2026, so a study that had
+ * answered no to clinical trials still got "2.14 Clinical trials, no answers
+ * captured yet" in its Word document. To a Board that reads as a section left
+ * unanswered rather than one that does not apply, which is a worse thing to hand
+ * over than nothing at all.
+ *
+ * The intake list is the source of truth for the answer-driven ones, so this
+ * asks it rather than restating its rules.
+ *
+ * **2.13 always stays, whatever triage said, and that is guardrail 4 rather than
+ * an oversight.** It has no intake section because research involving Indigenous
+ * Peoples is routed to a person and never drafted. Dropping it for a study that
+ * answered no would mean the one section the tool must never write could vanish
+ * on the strength of a single self-reported answer, and the disclosure to the
+ * Board would stop naming it. A researcher who answered no and was wrong is
+ * exactly the case the guardrail is for.
+ */
+function applicableSections(answers: AnswerMap): Set<string> {
+  const numbers = new Set(
+    visibleSections(answers)
+      .map((section) => section.formSection)
+      .filter((number): number is string => Boolean(number)),
+  )
+
+  numbers.add('2.13')
+
+  return numbers
 }
 
 function buildSection(

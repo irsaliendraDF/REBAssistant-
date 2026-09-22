@@ -44,11 +44,49 @@ const SOME_ANSWERS: AnswerMap = {
 }
 
 describe('structure', () => {
-  it('produces every form section, in the form’s own order', () => {
+  it('produces every section that applies, in the form’s own order', () => {
     const draft = assembleDraft({ project: project(), answers: {}, now: NOW })
-    expect(draft.sections.map((section) => section.number)).toEqual(
-      FORM_SECTIONS.map((section) => section.number),
-    )
+    const expected = FORM_SECTIONS.filter(
+      (section) => !section.conditional || section.number === '2.12' || section.number === '2.13',
+    ).map((section) => section.number)
+
+    expect(draft.sections.map((section) => section.number)).toEqual(expected)
+  })
+
+  /**
+   * Changed 22 September 2026. This used to assert every form section, always,
+   * which is what put "2.14 Clinical trials, no answers captured yet" into the
+   * Word document of a study that had answered no to clinical trials. To a Board
+   * that reads as a section left unanswered rather than one that does not apply.
+   */
+  it('leaves out a conditional section whose gate was answered no', () => {
+    const draft = assembleDraft({ project: project(), answers: SOME_ANSWERS, now: NOW })
+    const numbers = draft.sections.map((section) => section.number)
+
+    expect(numbers).not.toContain('2.14')
+    expect(numbers).not.toContain('2.15')
+    expect(numbers).not.toContain('2.8')
+  })
+
+  it('includes a conditional section once its gate is answered yes', () => {
+    const draft = assembleDraft({
+      project: project(),
+      answers: { ...SOME_ANSWERS, 'intake.2_5.future_use': 'yes' },
+      now: NOW,
+    })
+
+    expect(draft.sections.map((section) => section.number)).toContain('2.8')
+  })
+
+  /**
+   * Guardrail 4, and the reason the filter above has an exception in it. The one
+   * section the tool must never write cannot be allowed to disappear on the
+   * strength of a single self-reported triage answer, because a researcher who
+   * answered no and was wrong is the case the guardrail exists for.
+   */
+  it('keeps 2.13 even when triage said no to Indigenous research', () => {
+    const draft = assembleDraft({ project: project(), answers: SOME_ANSWERS, now: NOW })
+    expect(draft.sections.map((section) => section.number)).toContain('2.13')
   })
 
   it('files each answer under the section its question declares', () => {
