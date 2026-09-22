@@ -54,35 +54,59 @@ Send yourself one afterwards to check it. The placeholders are filled in by
 Supabase; if you open these files directly in a browser you will see the
 placeholder text rather than a link, which is correct.
 
-## Why the link is a token_hash link, and where the code went
+## Why the link is a token_hash link, and why the URL is hardcoded
 
 Both templates build their own link:
 
 ```
-{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=recovery
+https://reb-assistant.vercel.app/callback?token_hash={{ .TokenHash }}&type=recovery
 ```
 
-rather than using `{{ .ConfirmationURL }}`. **The difference is that a
-`ConfirmationURL` completes only in the browser that asked for it**, because the
-proof of the request is a cookie in that browser. Open the email on a phone after
-asking on a laptop and it cannot work, however fast you click. A `token_hash`
-link carries its own proof, so it completes anywhere.
+rather than using `{{ .ConfirmationURL }}`, and rather than `{{ .RedirectTo }}` or
+`{{ .SiteURL }}`. **Three separate reasons, all of them learned the hard way on
+22 September 2026.**
 
-`{{ .RedirectTo }}` is used rather than `{{ .SiteURL }}` because the app derives
-its own origin from the request and passes it in, so there is no dashboard
-setting to get wrong. The `&` is correct for recovery, where the app already
-appends `?next=`; confirm-signup uses `?` because its redirect has no query
-string.
+**One: `{{ .ConfirmationURL }}` completes only in the browser that asked for it**,
+because the proof of the request is a cookie in that browser. Open the email on a
+phone after asking on a laptop and it cannot work. A `token_hash` link carries its
+own proof and completes anywhere.
+
+**Two, and this is the big one: a `token_hash` link never visits Supabase at all.**
+It goes straight to this app, which verifies the token server side. That takes the
+whole `redirect_to` allow-list out of the picture. **This project's allow-list does
+not contain the app's paths**, so Supabase was discarding every `redirect_to` the
+app sent and falling back to the Site URL. Verified by asking the admin API for a
+recovery link and reading back what it resolved to:
+
+```
+asked : https://reb-assistant.vercel.app/callback?next=/reset-password
+  got : https://reb-assistant.vercel.app/
+```
+
+So a `ConfirmationURL` link landed on the site root, which has no token handling,
+rather than on `/callback`. **Fix the allow-list anyway** under Authentication,
+URL Configuration, Redirect URLs, by adding `https://reb-assistant.vercel.app/**`.
+Nothing here depends on it any more, but leaving it wrong is a trap for whoever
+needs it next.
+
+**Three: the URL is hardcoded because the alternatives resolve wrongly.**
+`{{ .RedirectTo }}` renders whatever Supabase resolved, which is the bare Site URL
+while the allow-list is wrong, producing `https://reb-assistant.vercel.app/&token_hash=...`
+with no `?`. `{{ .SiteURL }}` carries a trailing slash, producing a double slash.
+Hardcoding is blunt, and it is the only one of the three that cannot silently
+produce a broken link. **If the domain ever changes, these two files change with
+it**, and that is written here because nothing else will remind anyone.
 
 **The six-digit code these templates used to carry is gone**, as of 22 September.
 It existed for the browser-binding problem above, which the link form now solves
-properly, and for a second reason: that Microsoft 365, which Dalhousie runs,
-follows links in mail and can spend a one-use link before anyone clicks it.
-**That one was never observed here.** It went into the repository on 24 August as
-one of four possible explanations for a report whose actual cause turned out to
-be a missing session refresh, and it was then repeated in eight files as though
-it had been established. If a spent-on-arrival link is ever actually
-demonstrated, the code is in the history and `docs/decisions.md` says so.
+at the source, and for a claim that Microsoft 365 spends one-use links by scanning
+them, which **was never observed here**. It went into the repository on 24 August
+as one of four possible explanations for a report whose actual cause was a missing
+session refresh, then got repeated in eight files as though it were established.
+
+Worth knowing if anyone reinstates it: **Supabase issued an eight-digit
+`email_otp` on this project**, not six, so the old six-digit input would have
+rejected a valid code anyway.
 
 ## What these templates fix, and what they do not
 
