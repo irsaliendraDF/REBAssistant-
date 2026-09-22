@@ -6,6 +6,8 @@ import {
   type ProjectState,
 } from '@/lib/workflow/states'
 
+import { ScrollCurrentIntoView } from './scroll-current-into-view'
+
 /**
  * The workflow, as a progress track.
  *
@@ -36,7 +38,11 @@ export function WorkflowProgress({
   return (
     // Six labelled steps do not fit a phone screen legibly. Scrolling the track
     // keeps every label readable rather than shrinking them all until none are.
-    <div className="overflow-x-auto pb-2">
+    //
+    // Scrolling it is only half the answer, though: on a phone the strip opened
+    // at step one whatever stage the project was at, so the later the researcher
+    // got, the less the track told them. It now opens on where they are.
+    <ScrollCurrentIntoView className="overflow-x-auto pb-2">
       <ol
         className="relative flex min-w-[600px] items-start"
         aria-label="Application progress"
@@ -126,6 +132,6 @@ export function WorkflowProgress({
           )
         })}
       </ol>
-    </div>
+    </ScrollCurrentIntoView>
   )
 }
