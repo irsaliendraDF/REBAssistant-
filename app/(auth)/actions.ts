@@ -150,6 +150,44 @@ export async function requestPasswordReset(formData: FormData) {
 }
 
 /**
+ * The six-digit code from the reset email, typed in.
+ *
+ * Not a nicety, and the reason it exists is written down twice already in this
+ * repository. A reset link is a single-use URL sitting in a university mailbox:
+ * Microsoft 365, which Dalhousie runs, follows links in mail to check them, and
+ * a link that has been followed once is spent before anyone clicks it. The link
+ * also completes only in the browser that asked for it, so reading the email on
+ * a phone after asking on a laptop cannot work.
+ *
+ * Both of those killed the magic link. Moving to a password moved them onto the
+ * reset path rather than removing them, and the reset path shipped on
+ * 21 September without this. A typed code has neither problem.
+ */
+export async function verifyResetCode(formData: FormData) {
+  const email = readEmail(formData)
+  const code = String(formData.get('code') ?? '').replace(/[\s-]/g, '')
+
+  if (!email) redirect('/forgot-password?error=invalid_email')
+
+  const back = `/forgot-password?sent=${encodeURIComponent(email)}`
+  if (!/^\d{6}$/.test(code)) redirect(`${back}&error=invalid_code`)
+
+  const supabase = await createClient()
+  if (!supabase) redirect('/forgot-password?error=auth_not_configured')
+
+  const { error } = await supabase.auth.verifyOtp({ email, token: code, type: 'recovery' })
+
+  if (error) {
+    if (isServiceUnavailable(error)) redirect(`${back}&error=service_unavailable`)
+    redirect(`${back}&error=code_failed`)
+  }
+
+  // Verified, so there is now a session, which is what lets the next screen
+  // change the password.
+  redirect('/reset-password')
+}
+
+/**
  * Setting a new password, from the session the reset link established.
  *
  * `updateUser` needs a session, which is why this only works having arrived

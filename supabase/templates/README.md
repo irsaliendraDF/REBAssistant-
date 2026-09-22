@@ -1,24 +1,36 @@
 # Authentication email templates
 
-The sign-in email is the first thing anyone sees of this tool, and the default
-Supabase one reads as spam. Shakara flagged exactly that on 6 August 2026: she
-got in, but assumed the email was junk first.
+The first email anyone sees of this tool is the first thing they judge it by, and
+the default Supabase one reads as spam. Shakara flagged exactly that on 6 August
+2026: she got in, but assumed the email was junk first.
 
-These two templates replace it. They are kept here rather than only in the
-Supabase dashboard so the wording is versioned, reviewable, and survives the
-handover to Future Civics. If you edit them in the dashboard, edit them here too.
+These templates replace it. They are kept here rather than only in the Supabase
+dashboard so the wording is versioned, reviewable, and survives the handover to
+Future Civics. If you edit them in the dashboard, edit them here too.
+
+**Read this before assuming which templates matter.** Sign-in changed to email
+and password on 21 September 2026. The magic link is gone. **Reset Password is
+now the email that decides whether somebody can get in at all**, and it was the
+one template nobody had configured, because the note below used to say it was
+never triggered. It was never triggered until the day it became the only one that
+was.
 
 ## Which template is which
 
-Sign-in is magic link only, so only two of Supabase's templates are ever sent:
+Since 21 September 2026 sign-in is email and password, so these are sent:
 
 | File | Supabase template | When it is sent |
 |---|---|---|
-| `confirm-signup.html` | **Confirm signup** | First time an address is used |
-| `magic-link.html` | **Magic Link** | Every sign-in after that |
+| `confirm-signup.html` | **Confirm signup** | Once, when an account is created |
+| `recovery.html` | **Reset Password** | Setting a password, and every forgotten one after |
+| `magic-link.html` | **Magic Link** | Never any more. Kept for the history, and in case the link ever returns |
 
-The others (Invite user, Change Email Address, Reset Password) are never
-triggered by this app, because there is no password and no invitation flow.
+**`recovery.html` is the one that matters now.** Everyone who had an account
+before passwords existed sets their first one through it, and this product's own
+usage pattern guarantees it gets used again: researchers work hard for a week and
+come back months later, which is exactly when a password has been forgotten.
+
+Invite user and Change Email Address are still never triggered.
 
 ## How to apply them
 
@@ -26,10 +38,15 @@ triggered by this app, because there is no password and no invitation flow.
 2. **Authentication** in the left sidebar, then **Emails**
 3. Open the **Confirm signup** template, clear the message body, paste the whole
    contents of `confirm-signup.html`, and save
-4. Do the same for **Magic Link** with `magic-link.html`
+4. Do the same for **Reset Password** with `recovery.html`
 5. Set the subject lines:
    - Confirm signup: `Confirm your email for Research Ethics Board Assistant`
-   - Magic Link: `Your sign-in link for Research Ethics Board Assistant`
+   - Reset Password: `Set a new password for Research Ethics Board Assistant`
+
+**Until step 4 is done, the reset email is Supabase's unstyled default.** It does
+not name the tool, it does not carry the six-digit code, and it is the shape of
+message people delete. Somebody reporting that no email arrived may well have
+received that one.
 
 Send yourself one afterwards to check it. The `{{ .ConfirmationURL }}`
 placeholder is filled in by Supabase; if you open these files directly in a
@@ -37,10 +54,9 @@ browser you will see the placeholder text instead of a link, which is correct.
 
 ## The six-digit code
 
-Both templates now show a code as well as a link, from the `{{ .Token }}`
-placeholder. **Re-paste both templates into the dashboard**, or the code will not
-appear in the mail people receive and the code box on the sign-in page will have
-nothing to accept.
+Every template shows a code as well as a link, from the `{{ .Token }}`
+placeholder. **Re-paste every template into the dashboard**, or the code will not appear in
+the mail people receive and the code box on the page will have nothing to accept.
 
 It is there because a link is fragile in a university mailbox in two ways that
 have nothing to do with the researcher:

@@ -26,6 +26,8 @@ const EVERY_CREDENTIAL_REASON: CredentialReason[] = [
   'rate_limited',
   'service_unavailable',
   'reset_failed',
+  'invalid_code',
+  'code_failed',
 ]
 
 describe('sign-in messages', () => {
@@ -137,11 +139,25 @@ describe('the magic link is gone', () => {
    * remedies went with it, so nobody reintroduces a six-digit code box or a
    * browser reset while wiring something unrelated.
    */
-  it('has no message about a six-digit code', () => {
-    const remaining = Object.entries(SIGN_IN_MESSAGES).filter(([, message]) =>
-      /six-digit|six digit/i.test(message),
-    )
-    expect(remaining).toEqual([])
+  /**
+   * The code came back on 22 September, for the reset path only.
+   *
+   * Moving to a password did not remove the two things that killed the magic
+   * link, it moved them onto the reset email: Microsoft 365 spends single-use
+   * links by scanning them, and a link completes only in the browser that asked
+   * for it. The reset path shipped without a code and a researcher could not get
+   * in. So the code is gone from signing in, where there is a password instead,
+   * and present for resetting, where there is not.
+   */
+  it('has no code fallback on the sign-in path, which has a password instead', () => {
+    for (const key of ['invalid_credentials', 'email_not_confirmed'] as const) {
+      expect(SIGN_IN_MESSAGES[key], key).not.toMatch(/six-digit|six digit/i)
+    }
+  })
+
+  it('keeps a code fallback on the reset path, where the link is still fragile', () => {
+    expect(SIGN_IN_MESSAGES.invalid_code).toMatch(/six digits/i)
+    expect(SIGN_IN_MESSAGES.code_failed).toBeTruthy()
   })
 
   it('has no message offering to clear the browser', () => {
