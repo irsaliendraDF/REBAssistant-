@@ -53,7 +53,11 @@ export async function GET(request: Request) {
       : await supabase.auth.exchangeCodeForSession(outcome.code)
 
   if (error) {
-    return NextResponse.redirect(signInUrl(origin, exchangeFailureReason(error.message)))
+    // TEMPORARY DIAGNOSTIC, 2026-10-16: the real Supabase error text, so a dead
+    // link can be told apart from a spent one. Remove once the cause is known.
+    const url = new URL(signInUrl(origin, exchangeFailureReason(error.message)))
+    url.searchParams.set('detail', `${error.status ?? ''} ${error.code ?? ''} ${error.message}`.trim())
+    return NextResponse.redirect(url)
   }
 
   return NextResponse.redirect(`${origin}${outcome.next}`)
