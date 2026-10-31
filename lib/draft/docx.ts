@@ -227,6 +227,20 @@ function partParagraphs(part: DraftPart, sectionNumber: string): Paragraph[] {
     }
   }
 
+  if (part.missing && part.missing.length > 0) {
+    paragraphs.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: `No answer captured yet: ${part.missing.join('; ')}`,
+            italics: true,
+            size: 18,
+          }),
+        ],
+      }),
+    )
+  }
+
   return paragraphs
 }
 

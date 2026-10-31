@@ -81,6 +81,18 @@ describe('parts', () => {
     )
   })
 
+  it('says which question is unanswered when another answer sits under the same number', () => {
+    // 2.5.1 holds the dependence answer, and the consent-method question under the
+    // same number was never answered. One answer must not hide the other gap.
+    const consent = part(draft, '2.5', '2.5.1')
+    expect(consent.status).toBe('answered')
+    expect(consent.missing).toEqual(['How will you obtain consent, and at what point?'])
+  })
+
+  it('lists nothing as missing where every question under a number is answered', () => {
+    expect(part(draft, '2.3', '2.3.1').missing).toBeUndefined()
+  })
+
   it('lists every choice for a choice question, with the picked one ticked', () => {
     const choices = part(draft, '2.4', '2.4.1').answers[0].choices
     expect(choices?.length).toBeGreaterThan(1)

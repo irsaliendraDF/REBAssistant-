@@ -79,6 +79,12 @@ export interface DraftPart {
   answers: SourceAnswer[]
   /** Model-drafted text for this question, when the draft was split by question. */
   drafted?: string
+  /**
+   * Tool questions that feed this form question and have no answer yet, listed
+   * even when another answer sits here. Without it, one answer would hide that
+   * a second question under the same number was never answered.
+   */
+  missing?: string[]
 }
 
 export interface DraftSection {
@@ -416,10 +422,12 @@ function buildParts(
 
     const answers = context.byNumber[question.number] ?? []
     const text = drafted[question.number]
+    const missing = unansweredFor(question.number, context.answers)
 
     return {
       number: question.number,
       label: question.label,
+      ...(answers.length > 0 && missing.length > 0 ? { missing } : {}),
       status: text
         ? ('drafted' as const)
         : answers.length > 0
@@ -472,6 +480,14 @@ function administrativeParts(context: PartsContext): DraftPart[] {
   }
 
   return parts
+}
+
+/** The tool's questions that print under a form number and have no answer yet. */
+function unansweredFor(number: string, answers: AnswerMap): string[] {
+  return allQuestions()
+    .filter((question) => formNumbersFor(question.key).includes(number))
+    .filter((question) => !answers[question.key] || answers[question.key].trim().length === 0)
+    .map((question) => question.label)
 }
 
 /** Every answer the researcher gave, grouped under the form question it prints at. */
