@@ -17,7 +17,7 @@ This mailbox sends every account confirmation and password-reset email for the t
 
 **Password:** [to be entered by Irene Saliendra]
 
-The password alone does not grant access. The mailbox uses two-step verification, and the code is sent to the telephone of Irene Saliendra. Two-step verification is moved to the recipients' own telephone on a call.
+The password alone does not grant access. The mailbox uses two-step verification, and the code is sent to the telephone of Irene Saliendra. The recipients' first sign-in needs one verification code from that telephone, which Irene Saliendra supplies on request. The recipients then move two-step verification to their own telephone.
 
 ## 3. Step 1 of the transfer
 
@@ -34,8 +34,8 @@ The document is then deleted.
 
 - **Supabase.** The project belongs to the project's own organisation, which is signed in to through the project GitHub account. Control of the mailbox carries control of that account. The recipients are added as owners and sign in with their own accounts.
 - **GitHub.** The code resides in the project repository, controlled through the same account. The recipients' own accounts are added as owners.
-- **Vercel.** The recipients link the project to the transferred repository and verify every setting.
-- **Anthropic key.** The recipients issue their own key and replace the existing key in Vercel.
+- **Vercel.** Hosting remains with DigitalFlow, which maintains it. The recipients may create their own account if they choose, link the project to the project repository and verify every setting.
+- **Anthropic key.** While DigitalFlow maintains the hosting, drafting runs on the DigitalFlow key. If the recipients take over hosting, they issue their own key and enter it in their Vercel project.
 - **Backup codes.** These are never shared. The recipients generate their own in step 1.
 
 No other password is required from DigitalFlow.
