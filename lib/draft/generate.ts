@@ -10,10 +10,11 @@ import {
 } from '@/lib/form/dalhousie-sections'
 import {
   FORM_QUESTIONS,
+  formNumbersFor,
   printSectionFor,
   toolCoveredNumbers,
 } from '@/lib/form/dalhousie-questions'
-import { allQuestions } from '@/lib/intake/questions'
+import { GATE_KEYS, allQuestions, isQuestionVisible } from '@/lib/intake/questions'
 import { guidanceForSection } from '@/lib/kb/retrieve'
 
 /**
@@ -180,7 +181,7 @@ export async function draftSection({
                 '',
               ]
             : []),
-          ...questionLayoutInstruction(formSection),
+          ...questionLayoutInstruction(formSection, answers),
           `Write section ${formSection} of the application from these answers.`,
         ].join('\n'),
       },
@@ -222,8 +223,19 @@ export async function draftSection({
  * markers. If the model ignores the format, the text still prints whole; nothing
  * is lost, only the layout.
  */
-export function questionLayoutInstruction(formSection: string): string[] {
-  const covered = toolCoveredNumbers(formSection)
+export function questionLayoutInstruction(formSection: string, answers: AnswerMap = {}): string[] {
+  // A question is listed when the researcher answered something under it, or when
+  // it is asked of every applicant. A question that only applies in some studies
+  // and was not answered is left out, so the model is never invited to write a
+  // gap sentence about something that does not apply.
+  const covered = toolCoveredNumbers(formSection).filter((number) => {
+    const feeding = allQuestions().filter((question) => formNumbersFor(question.key).includes(number))
+    const answered = feeding.some(
+      (question) => isQuestionVisible(question, answers) && (answers[question.key] ?? '').trim().length > 0,
+    )
+    const askedOfEveryone = feeding.some((question) => !question.showWhen && !GATE_KEYS.has(question.key))
+    return answered || askedOfEveryone
+  })
   if (covered.length < 2) return []
 
   const labels = covered.map((number) => {
@@ -249,6 +261,7 @@ export function sourcesFor(
 ): { question: string; answer: string }[] {
   return allQuestions()
     .filter((question) => printSectionFor(question.key, question.formSection) === formSection)
+    .filter((question) => isQuestionVisible(question, answers))
     .map((question) => {
       const answer = answers[question.key]
       if (!answer || answer.trim().length === 0) return null

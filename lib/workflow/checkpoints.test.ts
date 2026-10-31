@@ -325,7 +325,7 @@ describe('a section checkpoint', () => {
     })!
 
     expect(summary.title).toBe('Recruitment')
-    expect(summary.captured).toHaveLength(4)
+    expect(summary.captured).toHaveLength(6)
     expect(summary.captured.some((item) => item.detail === 'Left blank')).toBe(true)
   })
 

@@ -36,6 +36,12 @@ export interface Question {
   placeholder?: string
   /** The form section this answer feeds, e.g. '2.3'. */
   formSection?: string
+  /**
+   * Shown only when this returns true. Used for follow-ups to a yes or no
+   * question inside a section that is otherwise always shown. Like the section
+   * gates, it takes effect once the earlier answer is saved.
+   */
+  showWhen?: (answers: AnswerMap) => boolean
 }
 
 export interface IntakeSection {
@@ -150,12 +156,57 @@ export function triageFlags(answers: AnswerMap): {
 // Intake
 // ---------------------------------------------------------------------------
 
+/** A follow-up that appears only when an earlier yes or no question was answered yes. */
+const whenYes = (key: string) => (answers: AnswerMap) => answers[key] === 'yes'
+
+const PHASED_KEY = 'intake.2_1.phased'
+const CONSENT_EXCEPTION_KEY = 'intake.2_5.consent_exception'
+const DECEPTION_KEY = 'intake.2_5.deception'
+const INCIDENTAL_KEY = 'intake.2_10.incidental'
+const GENETIC_KEY = 'intake.2_10.genetic'
+
+/**
+ * The yes or no questions that decide whether a follow-up applies. They are asked
+ * of everyone, but the form question behind them applies only to some studies, so
+ * drafting does not treat an unanswered one as a gap.
+ */
+export const GATE_KEYS = new Set([
+  PHASED_KEY,
+  CONSENT_EXCEPTION_KEY,
+  DECEPTION_KEY,
+  INCIDENTAL_KEY,
+  GENETIC_KEY,
+])
+
 const INVOLVES_INTERVENTION_KEY = 'intake.2_6.intervention'
 const HANDLES_HEALTH_INFORMATION_KEY = 'intake.2_7.health_information'
 /** Drives section 2.8, which most studies mark not applicable. */
 const FUTURE_USE_KEY = 'intake.2_5.future_use'
 
 export const INTAKE_SECTIONS: IntakeSection[] = [
+  {
+    formSection: '2.1',
+    title: 'Lay summary and phased review',
+    intro:
+      'The lay summary itself is drafted from your answer to the second opening question. This section asks only about phased review.',
+    questions: [
+      {
+        key: PHASED_KEY,
+        label: 'Are you asking the Board to review this research in phases?',
+        help: 'Most studies are reviewed as a whole. A phased review is unusual, and the application instructions say to read them before asking for one. Choose Yes and save to be asked which phases.',
+        type: 'choice',
+        options: YES_NO_UNSURE,
+        formSection: '2.1',
+      },
+      {
+        key: 'intake.2_1.phased_detail',
+        label: 'Why is a phased review appropriate for this study, and which phases does this application cover?',
+        type: 'textarea',
+        formSection: '2.1',
+        showWhen: whenYes(PHASED_KEY),
+      },
+    ],
+  },
   {
     formSection: '2.2',
     title: 'Research question and objectives',
@@ -231,6 +282,20 @@ export const INTAKE_SECTIONS: IntakeSection[] = [
         formSection: '2.4',
       },
       {
+        key: 'intake.2_4.who_recruits',
+        label: 'Who will carry out the recruitment, and what will they do?',
+        help: 'Name a role, such as research assistant, rather than a person. Do not enter anyone’s name here.',
+        type: 'textarea',
+        formSection: '2.4',
+      },
+      {
+        key: 'intake.2_4.expressing_interest',
+        label: 'What will someone do to show they are interested in taking part?',
+        help: 'For example, reply to an email, scan a code or complete a short form.',
+        type: 'textarea',
+        formSection: '2.4',
+      },
+      {
         key: 'intake.2_4.screening',
         label: 'How will you check that someone is eligible to take part?',
         help: 'If people decide for themselves, say so.',
@@ -279,6 +344,38 @@ export const INTAKE_SECTIONS: IntakeSection[] = [
         required: true,
         options: YES_NO_UNSURE,
         formSection: '2.5',
+      },
+      {
+        key: CONSENT_EXCEPTION_KEY,
+        label:
+          'Are you asking the Board to waive, or change, the requirement to obtain informed consent before people take part?',
+        help: 'This is uncommon. If you are not sure, choose I am not sure and ask the Research Ethics Office. Choose Yes and save to be asked why.',
+        type: 'choice',
+        options: YES_NO_UNSURE,
+        formSection: '2.5',
+      },
+      {
+        key: 'intake.2_5.consent_exception_detail',
+        label: 'Why can consent not be obtained in the usual way, and how will participants be told about the research afterwards?',
+        help: 'The form asks you to address the criteria in TCPS 2 Article 3.7A, so check your answer against them.',
+        type: 'textarea',
+        formSection: '2.5',
+        showWhen: whenYes(CONSENT_EXCEPTION_KEY),
+      },
+      {
+        key: DECEPTION_KEY,
+        label: 'Will participants be told anything untrue, or kept unaware of the real purpose of the study?',
+        help: 'Some research cannot work if participants know everything in advance. If that applies, choose Yes and save to be asked how you will justify it and debrief.',
+        type: 'choice',
+        options: YES_NO_UNSURE,
+        formSection: '2.5',
+      },
+      {
+        key: 'intake.2_5.deception_detail',
+        label: 'What will participants not be told, why is that necessary, and how will they be debriefed afterwards?',
+        type: 'textarea',
+        formSection: '2.5',
+        showWhen: whenYes(DECEPTION_KEY),
       },
     ],
   },
@@ -363,6 +460,13 @@ export const INTAKE_SECTIONS: IntakeSection[] = [
         formSection: '2.7',
       },
       {
+        key: 'intake.2_7.reporting',
+        label: 'When you report the results, how will you protect confidentiality?',
+        help: 'Say whether you will show only group results or individual results, and whether anyone will be quoted or could be recognised. If you will quote people, say how you will get their consent for that.',
+        type: 'textarea',
+        formSection: '2.7',
+      },
+      {
         key: 'intake.2_7.limits',
         label: 'Are there any limits on the confidentiality you can offer?',
         help: 'For example a legal duty to report abuse or neglect of a child, or of an adult in need of protection. These must also appear in the consent form.',
@@ -405,6 +509,20 @@ export const INTAKE_SECTIONS: IntakeSection[] = [
       {
         key: 'intake.2_8.access',
         label: 'Who will be able to access it in future, and under what circumstances?',
+        type: 'textarea',
+        formSection: '2.8',
+      },
+      {
+        key: 'intake.2_8.repository',
+        label: 'If the data will go into a repository or biobank, which one is it, and what protects participants’ data there?',
+        help: 'If you will keep the data yourself instead, say so.',
+        type: 'textarea',
+        formSection: '2.8',
+      },
+      {
+        key: 'intake.2_8.stored',
+        label: 'What type of data or materials will be stored for re-use, how identifiable will they be, and roughly how much?',
+        help: 'The form also asks for a list of every field in the final data set, as an appendix.',
         type: 'textarea',
         formSection: '2.8',
       },
@@ -474,6 +592,36 @@ export const INTAKE_SECTIONS: IntakeSection[] = [
         required: true,
         formSection: '2.10',
       },
+      {
+        key: INCIDENTAL_KEY,
+        label: 'Could the research reveal something important about a person taking part that you would need to tell them, such as a health concern?',
+        help: 'This is called an incidental finding: something found along the way that is outside what the study set out to learn. Choose Yes and save to be asked how you would tell them.',
+        type: 'choice',
+        options: YES_NO_UNSURE,
+        formSection: '2.10',
+      },
+      {
+        key: 'intake.2_10.incidental_detail',
+        label: 'How would you tell participants about such a finding?',
+        type: 'textarea',
+        formSection: '2.10',
+        showWhen: whenYes(INCIDENTAL_KEY),
+      },
+      {
+        key: GENETIC_KEY,
+        label: 'Will you give genetic results or information to participants, communities or groups?',
+        help: 'Most studies will not. Choose Yes and save to be asked about genetic counselling.',
+        type: 'choice',
+        options: YES_NO_UNSURE,
+        formSection: '2.10',
+      },
+      {
+        key: 'intake.2_10.genetic_detail',
+        label: 'What genetic counselling will be offered?',
+        type: 'textarea',
+        formSection: '2.10',
+        showWhen: whenYes(GENETIC_KEY),
+      },
     ],
   },
   {
@@ -508,6 +656,26 @@ export const INTAKE_SECTIONS: IntakeSection[] = [
         type: 'text',
         formSection: '2.14',
       },
+      {
+        key: 'intake.2_14.known_effects',
+        label: 'What is known about the effects of any product or device being studied, what are its approved uses, and how does your use differ?',
+        help: 'Include safety information and possible contraindications.',
+        type: 'textarea',
+        formSection: '2.14',
+      },
+      {
+        key: 'intake.2_14.blinding',
+        label: 'Will participants or researchers be blinded to who receives what, or will participants be randomly assigned? Describe the plan.',
+        type: 'textarea',
+        formSection: '2.14',
+      },
+      {
+        key: 'intake.2_14.safety',
+        label: 'How will safety be monitored, and how will new information reach participants, the Board, the research team, sponsors and the trial registry?',
+        help: 'Include when participants would be withdrawn for safety reasons, when the trial would stop early, and what could happen to participants if it does.',
+        type: 'textarea',
+        formSection: '2.14',
+      },
     ],
   },
   {
@@ -529,13 +697,41 @@ export const INTAKE_SECTIONS: IntakeSection[] = [
         type: 'textarea',
         formSection: '2.15',
       },
+      {
+        key: 'intake.2_15.linking',
+        label: 'Will separate sets of health data be linked as part of this research?',
+        help: 'If yes, say why linking is necessary, how it will be done, and whether it makes participants easier to identify. If no, write No.',
+        type: 'textarea',
+        formSection: '2.15',
+      },
+      {
+        key: 'intake.2_15.privacy_risks',
+        label: 'What risks to privacy could reasonably be foreseen from using this health information, and how will each be reduced?',
+        type: 'textarea',
+        formSection: '2.15',
+      },
     ],
   },
 ]
 
-/** The sections that apply to this application, in order. */
+/** Whether a question is shown now. A question with no gate is always shown. */
+export function isQuestionVisible(question: Question, answers: AnswerMap): boolean {
+  return !question.showWhen || question.showWhen(answers)
+}
+
+/**
+ * The sections that apply to this application, in order, each carrying only the
+ * questions that apply now. Everything that walks a section's questions reads
+ * this, so a follow-up that is not shown is also not required, not counted and
+ * not saved.
+ */
 export function visibleSections(answers: AnswerMap): IntakeSection[] {
-  return INTAKE_SECTIONS.filter((section) => !section.showWhen || section.showWhen(answers))
+  return INTAKE_SECTIONS.filter((section) => !section.showWhen || section.showWhen(answers)).map(
+    (section) => ({
+      ...section,
+      questions: section.questions.filter((question) => isQuestionVisible(question, answers)),
+    }),
+  )
 }
 
 /** Question keys still needed before a step can be left. */

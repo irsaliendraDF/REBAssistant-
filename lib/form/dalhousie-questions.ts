@@ -153,6 +153,30 @@ export const QUESTION_TO_FORM: Record<string, string[] | null> = {
 
   'intake.2_15.source': ['2.15.1'],
   'intake.2_15.authority': ['2.15.1'],
+
+  // Added 2026-10-31 so that every numbered question on the form is asked. Each
+  // yes or no gate prints under the same number as its follow-up, which is how
+  // the form's own "Not applicable" box is answered.
+  'intake.2_1.phased': ['2.1.2'],
+  'intake.2_1.phased_detail': ['2.1.2'],
+  'intake.2_4.who_recruits': ['2.4.3'],
+  'intake.2_4.expressing_interest': ['2.4.4'],
+  'intake.2_5.consent_exception': ['2.5.4'],
+  'intake.2_5.consent_exception_detail': ['2.5.4'],
+  'intake.2_5.deception': ['2.5.5'],
+  'intake.2_5.deception_detail': ['2.5.5'],
+  'intake.2_7.reporting': ['2.7.3'],
+  'intake.2_8.repository': ['2.8.4'],
+  'intake.2_8.stored': ['2.8.6'],
+  'intake.2_10.incidental': ['2.10.3'],
+  'intake.2_10.incidental_detail': ['2.10.3'],
+  'intake.2_10.genetic': ['2.10.4'],
+  'intake.2_10.genetic_detail': ['2.10.4'],
+  'intake.2_14.known_effects': ['2.14.3'],
+  'intake.2_14.blinding': ['2.14.4'],
+  'intake.2_14.safety': ['2.14.5'],
+  'intake.2_15.linking': ['2.15.2'],
+  'intake.2_15.privacy_risks': ['2.15.3'],
 }
 
 const QUESTIONS_BY_NUMBER: Record<string, FormQuestion> = Object.fromEntries(

@@ -61,7 +61,10 @@ describe('where the tool’s questions print', () => {
     }
   })
 
-  it('leaves 15 form questions that the tool never asks, outside 2.11 and 2.13', () => {
+  it('asks every numbered question on the form, other than those it leaves to the form or a person', () => {
+    // 2.11 is completed on the form from the researcher's saved details and 2.13 is
+    // routed to a person, so neither is asked. Every other question has at least one
+    // of the tool's questions feeding it. This was 15 short until 31 October 2026.
     const never = FORM_QUESTIONS.filter(
       (question) =>
         question.section !== '2.11' &&
@@ -69,26 +72,7 @@ describe('where the tool’s questions print', () => {
         !toolCoveredNumbers(question.section).includes(question.number),
     ).map((question) => question.number)
 
-    expect(never).toEqual([
-      '2.1.2',
-      '2.4.3',
-      '2.4.4',
-      '2.5.4',
-      '2.5.5',
-      '2.7.3',
-      '2.8.4',
-      '2.8.6',
-      '2.10.3',
-      '2.10.4',
-      '2.14.3',
-      '2.14.4',
-      '2.14.5',
-      '2.15.2',
-      '2.15.3',
-    ])
-    // 2.5.2 is the sixteenth that was discussed: the tool asks only yes or no for
-    // it, so it counts as covered and prints that answer.
-    expect(never).not.toContain('2.5.2')
+    expect(never).toEqual([])
   })
 
   it('moves dependence to 2.5.1 and incentives to 2.6.5, where the form asks them', () => {
