@@ -100,6 +100,8 @@ To remove an empty account, select **Authentication**, then **Users**, then the 
 
 ### 5.1 Accounts
 
+Section 5.4 shows how these accounts connect to one another.
+
 | Account | Held by | Transfer method |
 |---|---|---|
 | Project mailbox, researchethicsboardassistant@gmail.com | DigitalFlow | Ownership transfer on a call with Irene Saliendra (Section 6, step 1) |
@@ -128,6 +130,75 @@ No password, key or recovery code is recorded in this document, because a docume
 The one password that must be transferred, that of the project mailbox, is supplied in a separate document titled "Logins", shared with the recipients by name. Two-step verification on that mailbox sends its code to the telephone of Irene Saliendra, so the password alone does not grant access. Moving two-step verification to the recipients' own telephone is completed together on a call. The Logins document is deleted once step 1 of Section 6 is complete.
 
 All other accounts are transferred by invitation, by ownership transfer or by the issue of new keys, and require no password from DigitalFlow. The mailbox's backup codes are never shared. The recipients regenerate them in step 1, which voids every code held by DigitalFlow.
+
+### 5.4 How the accounts connect
+
+Two views follow. The first shows who must sign in to what, which decides who can reach each account once the mailbox is transferred. The second shows how the running tool uses each service, which decides what stops when one of them fails.
+
+**Figure 1. Who signs in to what**
+
+```
+  Project mailbox (Gmail)
+  researchethicsboardassistant@gmail.com
+            |
+            |  signs in with Google
+            v
+  GitHub account
+  researchethicsboardassistant-commits
+            |
+      +-----+--------------------+
+      |                          |
+      | owns                     | signs in with GitHub
+      v                          v
+  Project repository       Supabase organisation
+  REBassistant             (the project's own)
+                                 |
+                                 | holds
+                                 v
+                           Database, sign-in, email
+                           templates and the service key
+
+  Separate accounts, held by DigitalFlow until steps 4 and 6 of Section 6:
+
+  Vercel (hosting)         deploys from  irsaliendraDF/REBAssistant-
+  Vercel (hosting)         holds         the Supabase keys and the Anthropic key
+  Anthropic account        issues        the Anthropic key
+```
+
+**Figure 2. How the running tool uses each service**
+
+```
+  Researcher's browser
+            |
+            |  signs in with email and password
+            v
+  The tool, hosted on Vercel
+            |
+      +-----+------------------------------+
+      |                                    |
+      | stores and reads answers,          | sends drafting requests,
+      | checks sign-in                     | after the redaction check
+      v                                    v
+  Supabase                           Anthropic (the AI model)
+  (database and sign-in)
+      |
+      | sends confirmation and reset emails
+      | through the project mailbox
+      | (an App Password held in Supabase)
+      v
+  Researcher's inbox
+```
+
+**What stops when one piece is lost**
+
+| If this is lost | What stops |
+|---|---|
+| Access to the project mailbox | Nobody can sign in to the GitHub account, and so not to the project repository or the Supabase dashboard. The tool itself keeps running, and emails keep sending until the App Password is revoked |
+| Access to the GitHub account | The project repository and the Supabase dashboard cannot be reached. The tool itself keeps running |
+| The Supabase project | Sign-in, saved answers and drafts stop. Section 4.4 applies if it has only paused |
+| The App Password held in Supabase | Confirmation and reset emails stop sending. People who are already signed in are not affected |
+| The Anthropic key held in Vercel | Drafting stops. Everything else continues |
+| Vercel | The site goes offline and nothing can be deployed |
 
 ## 6. Transfer procedure
 
