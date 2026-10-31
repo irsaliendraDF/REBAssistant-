@@ -19,8 +19,10 @@ below says where to look, not what the value is.
 `researchethicsboardassistant@gmail.com`, created for this project on
 6 August 2026. Not a personal account.
 
-It matters more than it looks: every sign-in to the tool is a magic link sent
-from this mailbox. Whoever controls it controls access to the product.
+It matters more than it looks: every account confirmation and password-reset
+email is sent from this mailbox. Whoever controls it can take over any account in
+the product. (Until 21 September 2026 every sign-in was a magic link from here;
+sign-in is now email and password.)
 
 - **2-Step Verification is enabled.** Required, because Gmail will not issue an
   App Password without it.

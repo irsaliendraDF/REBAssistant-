@@ -1,381 +1,252 @@
-# Research Ethics Board Assistant — Handover
+# Research Ethics Board Assistant Handover
 
-**For:** Future Civics
-**Built by:** DigitalFlow Consulting
-**Status at this document:** 21 September 2026. Built, deployed and in
-testing with the client. Not yet handed over.
-**Live:** https://reb-assistant.vercel.app
+**Prepared for:** KJ and Shakara
+**Prepared by:** Irene Saliendra, Founder and Principal Consultant, DigitalFlow Consulting Inc.
+**Date:** 31 October 2026
+**Production address:** https://reb-assistant.vercel.app
 
-This document is written for someone who has never seen this project and has to
-take it over. It says what the tool does, how it is built, why the harder
-decisions went the way they did, what is deliberately unfinished, and what has to
-happen to transfer it.
+## 1. Summary
 
-It contains no passwords, keys or recovery codes, on purpose. See
-**Accounts and credentials** below for where those live.
+The Research Ethics Board Assistant is built, deployed and operating in production. Account creation, email confirmation, password reset and AI-assisted drafting were each verified on the live system in October 2026, and the Word download follows the numbered questions of the Dalhousie Research Ethics Board application form.
 
----
+The handover is complete when the account transfers in Section 6 are finished. Until then DigitalFlow Consulting retains working access to every account described here. This document contains no passwords, keys or recovery codes. The one login that must be transferred is supplied separately, as described in Section 5.
 
-## 1. What the tool is
+Two matters remain open and require a decision by the recipients:
 
-A web application that helps researchers at Dalhousie University prepare a
-Research Ethics Board application. A researcher signs in, answers questions about
-their study, checks that the tool has understood them, and gets a Word document
-laid out in the Board's own form structure, which they complete and submit
-themselves.
+1. **Database plan.** The database project pauses itself when idle, which has interrupted service twice. A paid plan removes the behaviour (Section 7).
+2. **Repository destination.** The working repository is public and its destination account is to be designated (Section 5).
 
-**What it deliberately is not.** It does not review research, does not approve or
-exempt anything, does not submit to Dalhousie, and does not decide whether a
-study is ethical. Every ethics determination is the Board's. This is not modesty;
-it is the central design constraint, and it is enforced in several places in code
-rather than requested in a prompt.
+## 2. Purpose and limits of the tool
 
----
+The tool helps a researcher at Dalhousie University prepare a Research Ethics Board application. A researcher signs in, answers questions about the study, confirms that the tool has understood the method, and receives a Word document laid out under the form's own numbered questions. The researcher completes and submits the application.
 
-## 2. The eight guardrails
+The tool does not review research, approve or exempt it, or submit anything to Dalhousie. Every ethics determination is made by the Board.
 
-These come from Section 11 of the signed agreement. They are the reason several
-things are built the way they are, so they are listed with where each one
-actually lives.
+## 3. The Word document
 
-| # | Guardrail | Where it is enforced |
+Each answer is printed under the form's own number (2.3.1, 2.3.2 and so on), so that content is transferred to the form question by question. Three conventions apply:
+
+- **"Not asked by this tool. Complete on the form."** The tool does not ask 15 of the form's 54 numbered questions.
+- **"No answer captured yet."** The tool asks the question and the researcher has not answered it.
+- **Section 1** (names, Banner numbers, telephone numbers, supervisor) is printed as labelled blanks. The tool is designed never to ask for personal details.
+
+## 4. Operation and troubleshooting
+
+### 4.1 Common conditions
+
+| Condition | Usual meaning | Action |
+|---|---|---|
+| "Wrong email or password" | Either the password is incorrect or the address has no account. The tool cannot distinguish the two, by design | Try any other address that may have been used. Otherwise select **Forgot your password?** |
+| The dashboard is empty and work appears lost | A different address was used. Work remains with the address under which it was started, and accounts cannot be merged | Sign out and sign in with the original address |
+| No email arrives (confirmation or reset) | The message was sent and the receiving mail system is holding it, or the address has no account | Check the junk folder and wait two minutes. Request one further email only (one per minute is permitted). If it still does not arrive, use a different address. See 4.2 |
+| "That link has expired or had already been used" | Links work once and last one hour. The link may already have been opened | Request a new email and select the button once |
+| The link opens "page not found" (404) | The email template in Supabase is incorrect | See 4.3 |
+| Nothing loads, or sign-in reports the service as unavailable | The Supabase project has paused itself | See 4.4 |
+| Drafting returns "Not yet drafted", or the AI step never completes | The Anthropic key in Vercel is missing, expired or out of credit | See 4.5 |
+
+### 4.2 Email that does not arrive
+
+In October 2026 the tool's emails to one Dalhousie address did not arrive, although the Sent folder of the sending mailbox showed them leaving. A Gmail address worked. The cause was not established. Should this recur:
+
+1. Open the sending mailbox, researchethicsboardassistant@gmail.com, and look in **Sent** for the message.
+2. If the message is present, the tool has performed its function and the receiving system is holding it. The researcher should use a different address, such as a Gmail address.
+3. If the message is absent, open Supabase, then **Logs**, then **Auth**, and examine the newest entries for a failure.
+
+### 4.3 The two email templates
+
+The tool sends two distinct emails. Each has its own entry in Supabase, under **Authentication**, then **Emails**:
+
+- **Confirm signup.** Subject: "Confirm your email for Research Ethics Board Assistant". The button address ends `type=signup`.
+- **Reset Password.** Subject: "Set a new password for Research Ethics Board Assistant". The button address ends `type=recovery`.
+
+The wording of each is held in the repository under `supabase/templates/` (`confirm-signup.html` and `recovery.html`). The entire contents of the file are pasted into the matching entry, and the page is then reloaded to confirm that the change was saved.
+
+This configuration failed once. On 16 October 2026 the Confirm signup entry contained the Reset Password wording, and every new account's confirmation link was reported as expired. Pasting the correct file into each entry resolved it.
+
+### 4.4 Interruption of the whole service
+
+The Supabase project pauses itself after a period without use. This occurred on 26 August and on 19 September 2026. No data was lost on either occasion.
+
+1. **Check.** Open `https://reb-assistant.vercel.app/callback?token_hash=probe&type=email` and read the end of the address bar once the page has loaded. An address ending `error=link_expired` indicates that the database is answering and the fault lies elsewhere. An address ending `error=exchange_failed` indicates that the database is not answering.
+2. **Restore.** Open Supabase, open the project, and select **Restore project**. Allow two to three minutes. A "web server is down" message during this period is expected.
+3. **Prevent.** A paid Supabase plan does not pause. This is a billing decision and requires no development.
+
+### 4.5 Interruption of drafting
+
+1. In Vercel, open the project, then **Settings**, then **Environment Variables**, and confirm that `ANTHROPIC_API_KEY` is present.
+2. Confirm that the Anthropic account holds credit, since billing follows the key.
+3. When the key is replaced, the new value is entered in Vercel and the project is redeployed. A key is never placed in the repository or in an email.
+
+Drafting was verified on the live system on 31 October 2026.
+
+### 4.6 Assisting a researcher who cannot sign in
+
+A password cannot be set on behalf of another person. The researcher selects **Forgot your password?** and the email is delivered to the researcher.
+
+To review the existing accounts and the number of projects held by each, open Supabase, then **SQL Editor**, and run the following query. It reads data only.
+
+```
+select u.email, count(p.id) as projects
+from auth.users u
+left join projects p on p.owner_id = u.id
+group by u.email
+order by projects desc, u.email;
+```
+
+To remove an empty account, select **Authentication**, then **Users**, then the row's menu, then **Delete user**. The count above is checked first, because deleting an account deletes its work.
+
+## 5. Accounts, repositories and credentials
+
+### 5.1 Accounts
+
+| Account | Held by | Transfer method |
+|---|---|---|
+| Project mailbox, researchethicsboardassistant@gmail.com | DigitalFlow | Ownership transfer on a call with Irene Saliendra (Section 6, step 1) |
+| Supabase (database and sign-in) | DigitalFlow organisation | Invitation as owners, then rotation of the service key |
+| Anthropic key (AI drafting) | DigitalFlow key, held in Vercel | The recipients issue their own key and revoke the existing key |
+| Vercel (hosting) | DigitalFlow account | Linked to the transferred repository, then every setting is verified |
+| GitHub repository | DigitalFlow account | Transferred to the account designated by the recipients |
+
+### 5.2 Repositories
+
+Two repositories were identified on 31 October 2026.
+
+| Repository | Content | Visibility |
+|---|---|---|
+| `irsaliendraDF/REBAssistant-` | The working code. Every change to the tool, including the changes of 31 October 2026, is committed here, and Vercel deploys from it | Public |
+| `researchethicsboardassistant-commits/REBassistant` | Empty. It contains no commits and is not connected to production | Public |
+
+The second repository belongs to a GitHub account registered through Google sign-in with the project mailbox. Control of that mailbox therefore carries control of that GitHub account.
+
+The working repository contains no credentials. The file `.env.local` is excluded from version control, and only `.env.local.example` is tracked. The repository does contain the Supabase project identifier and the mailbox address, which are not secrets. The repository is public, and the recommended course is to set it to private when it is transferred, unless public release of the code is intended.
+
+### 5.3 Credentials
+
+No password, key or recovery code is recorded in this document, because a document of this kind is forwarded, copied and retained, and a credential recorded in it remains available to every holder of any copy.
+
+The one password that must be transferred, that of the project mailbox, is supplied in a separate document titled "Logins", shared with the recipients by name. Two-step verification on that mailbox sends its code to the telephone of Irene Saliendra, so the password alone does not grant access. Moving two-step verification to the recipients' own telephone is completed together on a call. The Logins document is deleted once step 1 of Section 6 is complete.
+
+All other accounts are transferred by invitation, by ownership transfer or by the issue of new keys, and require no password from DigitalFlow. The mailbox's backup codes are never shared. The recipients regenerate them in step 1, which voids every code held by DigitalFlow.
+
+## 6. Transfer procedure
+
+Until every step is complete, DigitalFlow retains working access. This reflects the nature of shared accounts and is not a deficiency of any party. The only remedy is to complete the list, in this order:
+
+1. **Mailbox.** Take ownership, change the password, regenerate the backup codes and move two-step verification to the recipients' own telephone. This step is the one most often omitted. Until the backup codes are regenerated, DigitalFlow holds ten working bypasses of two-step verification, regardless of the password.
+2. **Mail credential in Supabase.** In the Google account, revoke the existing App Password and issue a new one. Enter it in Supabase under **Authentication**, then **Emails**, then the SMTP settings.
+3. **Supabase.** Accept ownership, rotate the service role key and update it in Vercel.
+4. **Anthropic.** Issue a new key in the recipients' own Anthropic account, enter it in Vercel and revoke the existing key.
+5. **GitHub.** Accept the repository transfer to the designated account.
+6. **Vercel.** Link the project to the transferred repository and verify every environment variable. The two variables beginning `NEXT_PUBLIC_` must retain that prefix, because omitting it fails silently and completely.
+
+## 7. Open items and known limitations
+
+1. **Database plan.** The Supabase project pauses itself when idle and has interrupted service twice. The usage pattern of the tool, intensive use for a week followed by months of inactivity, is the least suited to this behaviour. A paid plan is recommended before researchers rely on the tool.
+2. **Transfer destination for the repository** and its visibility (Section 5.2).
+3. **Unasked form questions.** The tool never asks 15 of the form's 54 questions. Asking them would require new intake questions and is not a layout change.
+4. **A missing answer can be masked.** Where two questions print under one form number, a missing answer is not flagged once the other is answered. At 2.5.1 the dependence answer can mask an unanswered consent-method question.
+5. **Disclosure wording** in `lib/disclosure/text.ts` is placeholder text awaiting review by a research ethics expert. It is labelled as a placeholder in the product.
+6. **Drafting prompt and intake questions** are first drafts. The drafting prompt enforces the guardrail against ethics determinations and should be read by a person who knows what a Board will not accept.
+7. **Gap analysis** is rule-based. A model-assisted pass would identify more omissions.
+8. **Email is sent from a Gmail account.** This is suitable for a test group and unsuitable for a cohort, because the account is limited to roughly 500 messages a day. A domain controlled by the recipients, with SPF and DKIM records, is the replacement.
+9. **Residency.** Canadian residency was agreed to apply to participant data. The application runs in the hosting provider's default region while the database is in Montreal. The commitment holds because no participant data is stored anywhere in the system. If a later phase stores participant data, this decision must be reopened beforehand.
+10. **Redirect URLs.** The Supabase list holds `https://reb-assistant.vercel.app/callback` and the local address. Adding `https://reb-assistant.vercel.app/**` is recommended, and nothing depends on it at present.
+
+## 8. Technical reference
+
+### 8.1 Guardrails
+
+The following eight guardrails derive from Section 11 of the signed agreement and determine several design decisions.
+
+| # | Guardrail | Enforced in |
 |---|---|---|
 | 1 | Redaction gate before every model call | `lib/anthropic/redaction.ts`, applied at the single chokepoint in `lib/anthropic/client.ts` |
-| 2 | No participant data at rest | The schema. There is no participant table and no field for a participant's name or contact details, and `lib/data/types.ts` offers no way to add one |
-| 3 | A human gate at every reasoning step | `lib/workflow/states.ts`. Nothing auto-advances; saving never advances; every transition is logged with an actor |
-| 4 | Indigenous and community-engaged research routed, never generated | `isGenerationBlocked()`, checked in code before a prompt is constructed |
-| 5 | AI involvement stays disclosable | `drafts.ai_generated` is `not null`. Drafts are versioned, and a human edit carries the AI provenance forward |
-| 6 | The app never makes the ethics determination | The drafting and method-check system prompts, plus the absence of any code path that scores or approves |
-| 7 | Automated, logged consent wherever information is collected or reused | `consent_events`, append-only. Three consent kinds, each recording the exact wording shown |
-| 8 | AI-use disclosure on three surfaces | App terms gate, participant consent wording, and the disclosure inside the application itself |
+| 2 | No participant data at rest | The schema. There is no participant table and no field for a participant's name or contact details |
+| 3 | A human gate at every reasoning step | `lib/workflow/states.ts`. Nothing advances automatically and every transition is logged with an actor |
+| 4 | Indigenous and community-engaged research is routed to a person, never generated | `isGenerationBlocked()`, evaluated in code before a prompt is constructed |
+| 5 | AI involvement remains disclosable | `drafts.ai_generated` is not null. Drafts are versioned and a human edit carries the AI provenance forward |
+| 6 | The tool never makes the ethics determination | The drafting and method-check system prompts, and the absence of any code path that scores or approves |
+| 7 | Automated, logged consent wherever information is collected or reused | `consent_events`, append-only, recording the exact wording shown |
+| 8 | AI-use disclosure on three surfaces | The terms gate, the participant consent wording and the disclosure within the application |
 
-**Guardrail 1 is worth understanding properly.** Some categories are redacted
-before sending (email addresses, phone numbers, postal codes, street addresses).
-Others cause the request to be **refused outright** rather than cleaned: Social
-Insurance Numbers, health card numbers, dates of birth. The researcher is told
-what to remove. Nothing is sent.
+Guardrail 1 redacts email addresses, telephone numbers, postal codes and street addresses before a request is sent. Social Insurance Numbers, health card numbers and dates of birth cause the request to be refused outright, and the researcher is told what to remove. Guardrail 5 is the reason drafts are versioned and not overwritten: replacing a row would erase the record that a model wrote a section, and the disclosure to the Board would become inaccurate. The disclosure within the application is generated from the database and lists the sections a model actually drafted.
 
-**Guardrail 5 is why drafts are versioned rather than overwritten.** If an edit
-replaced the row, a researcher rewriting an AI-drafted section would erase the
-record that a model wrote it, and the disclosure to the Board would quietly
-become false. Editing carries `ai_generated` and `model_version` forward and sets
-`edited_by_human`.
-
-**Guardrail 8's third surface is generated from fact, not template.** The
-disclosure in the exported document lists the sections a model actually drafted,
-read from the database. It cannot drift from the truth, which is the entire point
-of it.
-
----
-
-## 3. How a researcher moves through it
+### 8.2 Researcher workflow
 
 ```
 triage → intake → method check → draft → gap analysis → complete
 ```
 
-- **Triage** establishes the shape of the study and sets the routing flags. On
-  the Indigenous and community-engaged questions, *"I am not sure" counts as
-  yes*. Being wrongly routed to a person costs a conversation; not being routed
-  costs considerably more.
-- **Intake** asks the substantive questions. Every question declares which form
-  section it feeds, which is how answers reach the right place in the document.
-- **Method check** states back what the tool understood the methodology to be, in
-  a form the researcher can disagree with. Confirm, alter, or reject. A rejection
-  sends the project back to intake.
-- **Draft** produces the application section by section. Drafting is a button per
-  section, never one button that writes everything.
-- **Gap analysis** reports what is missing or thin, citing TCPS 2 at chapter
-  level only.
+- **Triage** establishes the shape of the study and sets the routing flags. The answer "I am not sure" to the Indigenous and community-engaged questions counts as yes, because routing a study to a person unnecessarily costs a conversation, and failing to route it costs considerably more.
+- **Intake** asks the substantive questions. Each question declares the form section it feeds.
+- **Method check** states back the methodology as the tool understood it. The researcher confirms, alters or rejects it, and a rejection returns the project to intake.
+- **Draft** produces the application section by section, by one button per section.
+- **Gap analysis** reports what is missing or thin, citing TCPS 2 at chapter level only.
 - **Complete** offers the Word document.
 
-Nothing in this sequence moves on its own. That is guardrail 3, and it is the
-reason there is no "generate my application" button anywhere in the product.
+Nothing in this sequence advances automatically.
 
-### Signing in
+### 8.3 The Word document and the form's numbered questions
 
-Email and password. Four screens: sign in, create an account, forgot password,
-set a new password.
+`lib/form/dalhousie-questions.ts` lists the form's 54 numbered questions and states under which of them each of the tool's questions prints. Where a section covers two or more questions, the AI draft is requested as numbered answers (`[[2.3.1]]` on its own line before each answer), and `splitDraft()` in `lib/draft/assemble.ts` reads them back. If the model disregards the format, the text prints whole under its section and nothing is lost.
 
-**Email is involved twice in an account's life, not once per sign-in.** Once to
-confirm a new account, and again if the password is forgotten. Every ordinary
-sign-in touches no inbox at all, which is the point of the design.
+Two answers print in a section other than the one in which they are asked: dependence on the researcher (asked at 2.3, printed at 2.5.1) and incentives (asked at 2.4, printed at 2.6.5). The 15 unasked questions are fixed by a test in `lib/form/dalhousie-questions.test.ts`. The numbers 2.7.2 and 2.8.2 are generated by Word's list numbering and were read through Word.
 
-**Confirmation stays on, deliberately.** Without it anyone could register an
-address they do not own, which on a research ethics tool is not a trade worth
-making.
+### 8.4 Sign-in
 
-**Signing in never creates an account.** Creating one is its own screen and its
-own deliberate act. Until 21 September 2026 any address typed into the sign-in
-box got an account silently, which is how one researcher reached this product
-under three addresses with work under two of them. See section 10.
+Sign-in uses an email address and a password, on four screens: sign in, create an account, forgot password and set a new password. Email is involved twice in the life of an account, once to confirm it and once if the password is forgotten. Ordinary sign-in involves no inbox.
 
-**Supabase will not say whether an address has an account.** A wrong password and
-an address that never registered return the same `invalid_credentials`, on
-purpose, so that the sign-in box cannot be used to discover who has an account.
-It cannot be worked around, and the interface must not pretend otherwise: one
-message names both possibilities and offers the route out of each.
+- **Confirmation remains enabled.** Without it, any person could register an address they do not control.
+- **Signing in never creates an account.** Until 21 September 2026 any address typed into the sign-in box created an account silently, and one researcher reached the product under three addresses with work under two of them.
+- **Supabase does not disclose whether an address has an account.** A wrong password and an unregistered address return the same `invalid_credentials`, so that the sign-in box cannot be used to discover which addresses are registered. The only two places that can prevent a second account are the sign-up screen and the empty dashboard, which names the signed-in address.
+- **Applications belong to the address under which they were started.** There is no merging or linking of accounts.
+- **Both emails carry a `token_hash` link**, which holds its own proof and does not depend on a cookie in the browser that requested it. The link's address is written into each template (`https://reb-assistant.vercel.app/callback?token_hash=…&type=signup` or `type=recovery`), because Supabase's own redirect value resolves incorrectly while the Redirect URLs list is incomplete and produces a link with no question mark. If the domain changes, both template files change with it. See `supabase/templates/README.md`.
+- **Removed mechanisms.** The magic link, the six-digit code and the browser reset were each a remedy for a way in which a sign-in link can fail. A password fails in none of those ways.
 
-That has a consequence worth understanding before changing anything here. **The
-only two places left that can catch someone opening a second account for
-themselves are the sign-up screen, which says applications stay with the address
-they were started under, and the empty dashboard, which names the signed-in
-address.** Neither is decoration.
-
-**Applications belong to the address they were started under.** There is no merge
-and no account linking, so the same person on two addresses has two sets of work.
-
-**What was removed, and why it is not missed.** The magic link, the six-digit
-code, and the browser reset. Each was a fix for a way a sign-in link can fail,
-and a password fails in none of those ways.
-
-**The two emails that remain send a `token_hash` link**, which carries its own
-proof rather than depending on a cookie in the browser that asked for it, so a
-confirmation or reset opened on a phone completes normally. That was the one
-link failure anybody here could demonstrate. A second reason often given, that
-Dalhousie's mail spends single-use links by scanning them, **was written into
-this repository as established and never actually observed**; see
-`docs/decisions.md`. The reasoning about why a link died is still in
-`lib/auth/callback.ts` and still applies to those two emails.
-
----
-
-## 4. The stack
+### 8.5 Technology
 
 | Layer | Choice |
 |---|---|
 | Framework | Next.js 16 (App Router), React 19, TypeScript |
 | Styling | Tailwind CSS v4 |
-| Database, auth | Supabase (Postgres + pgvector), region `ca-central-1` |
-| Model | Anthropic, `claude-opus-5` |
+| Database and authentication | Supabase (Postgres with pgvector), region `ca-central-1` |
+| Model | Anthropic, `claude-opus-5`, set in `lib/env.ts` and overridable by `ANTHROPIC_MODEL` |
 | Export | `docx` |
 | Hosting | Vercel |
-| Tests | Vitest, 351 passing |
+| Tests | Vitest, 380 passing |
 
-**The data layer is behind an interface.** Everything above it talks to a
-`DataStore` (`lib/data/types.ts`), never to Supabase directly. There are two
-implementations: an in-memory one used when no database is configured, and the
-Supabase one. This was built when there was no database at all, and it is why
-connecting the hosted project was a credentials change rather than a rewrite.
-Keep it. It is also what makes the ownership rules testable, because both
-implementations are held to the same behaviour.
+The data layer sits behind an interface, `DataStore` (`lib/data/types.ts`), with an in-memory implementation used when no database is configured and a Supabase implementation. Both are held to the same behaviour, which is what makes the ownership rules testable.
 
----
+### 8.6 Knowledge base
 
-## 5. The knowledge base, and why it has no vector search
+The application ships with Dalhousie's form, its application guidelines, its consent and confidentiality templates and its recruitment guidance: eleven documents of about 34,000 words. Similarity search was scaffolded and deliberately not built. The guidelines are written against the form's own numbering, so the guidance that applies to a section is identified by the section number, in a table that a research ethics expert can read and correct. A similarity score cannot be audited in that way.
 
-The application ships with Dalhousie's form, its application guidelines, its
-consent and confidentiality templates, and recruitment guidance. Eleven documents,
-about 34,000 words.
+The cost is that unusual wording may fall outside a fixed mapping. If test users encounter this, `docs/decisions.md` records what to change: the vector column and `match_kb_chunks` already exist, and only an embedding step in `lib/kb/ingest.ts` is required. Ingestion is a local script (`npm run ingest`, with `npm run ingest:plan` as a dry run) and requires the Supabase service role key.
 
-The obvious design is similarity search: turn text into numbers, find the
-passages closest to what the researcher wrote. That was scaffolded and then
-**deliberately not built**.
-
-The guidelines document is written against the form's own numbering. Section 2.4
-is Recruitment, and 2.4.1 to 2.4.5 underneath it say what a Board expects that
-section to cover. So the relationship between "the section being drafted" and
-"the guidance that applies" is not something to infer from a similarity score. It
-is the section number, printed in the document.
-
-That matters beyond simplicity. A research ethics expert can read a table of
-which guidance each section receives, and correct it. Nobody can audit a
-similarity score. For a tool whose whole design is that a human can see and
-correct what it did, the table is the right answer.
-
-**What this costs.** A researcher writes something unusual and the relevant
-guidance sits somewhere a fixed mapping would not predict. Similarity search
-would find it. This will not. If test users hit that, it is the thing to revisit,
-and `docs/decisions.md` records exactly what to look at: the migration already
-creates the vector column, `match_kb_chunks` already works, and only
-`lib/kb/ingest.ts` would need an embedding step. No data would be lost, because
-none was ever written.
-
-**Ingestion is a local script, not something the app does.** `npm run ingest`,
-run from a maintainer's machine when the guidance changes. `npm run ingest:plan`
-shows what it would do without touching anything. It needs the Supabase service
-role key, which is the only job in the project that does.
-
----
-
-## 6. What is deliberately unfinished
-
-Being explicit about this is the point of the section. None of it is an oversight.
-
-**The disclosure wording is placeholder text.** Every string in
-`lib/disclosure/text.ts` is a first draft awaiting review by a research ethics
-expert. The *mechanism* is real and tested; the words are not final. They are
-marked as placeholders in the product itself.
-
-**The intake question set is a first draft.** Wording, ordering, and what is
-required versus optional are all open. It is one file
-(`lib/intake/questions.ts`), so revisions are cheap to apply.
-
-**The drafting system prompt needs expert review.** It is what enforces guardrail
-6, which code cannot enforce. It should be read by someone who knows what a Board
-will not tolerate.
-
-**Gap analysis is rule-based, not model-reasoned.** It catches contradictions and
-omissions by rule. A model pass would catch more. The method check was upgraded
-from rules to model reasoning; gap analysis has not been.
-
-**The Supabase project pauses itself when idle, and this has taken the app down
-twice.** On 26 August 2026 and again over the weekend of 19 September 2026,
-nobody could sign in. Restoring the project fixes it and loses no data, but it
-takes a couple of minutes, during which the host answers `521, web server is
-down`. That 521 is the expected middle state, not a second fault.
-
-**The app no longer hides it.** Until 21 September, a project that was not
-answering produced the "check your email" screen, because failures were read by
-matching the error's wording and an unreachable project produces `fetch failed`,
-which matched nothing. So researchers watched an inbox for a message that could
-not arrive, and it reached the builder as a sign-in bug both times. Failures are
-now read from the error's shape in `lib/auth/send-outcome.ts`, and an outage says
-it is an outage.
-
-**Under a password this matters more than it did under the link.** A sleeping
-database would otherwise surface as a rejected password, and someone told their
-password is wrong will retype a password they know is right until they conclude
-they are locked out. The message clears the password explicitly, and there is a
-test asserting it does.
-
-This product's usage pattern is the worst possible fit for that behaviour.
-Researchers use an ethics tool hard for a week, submit, and return months later
-for the next study, so a project that sleeps after a week of quiet is asleep
-every time somebody comes back. **Move it to a paid Supabase plan before real
-researchers are on it.** There is nothing to build; it is a billing decision, and
-it is the cheapest reliability improvement available here.
-
-**The one-request test for whether the database is up**, which costs a minute
-rather than a morning:
-
-```
-curl -s -o /dev/null -w "%{redirect_url}\n" \
-  "https://reb-assistant.vercel.app/callback?token_hash=probe000000000000000000000000000000&type=email"
-```
-
-`error=link_expired` means Supabase is answering and the problem is elsewhere.
-`error=exchange_failed` means it is not: check whether the project is paused. It
-sends no email and creates nothing.
-
-Do not start with the Gmail App Password, as this project did.
-
-**Email is on a Gmail account, not a domain.** Fine for a test group, wrong for a
-cohort: it caps around 500 messages a day. When it moves, use a **Future Civics**
-domain with SPF and DKIM records, not a DigitalFlow one. See
-`supabase/templates/README.md`.
-
-**Canadian residency is scoped to participant data, not to every byte.** This was
-settled by the client. The visible consequence is that there is no `vercel.json`
-pinning functions to a Canadian region, so the app runs in Vercel's default
-region while the database is in Montreal. The commitment still holds because
-there is no participant data anywhere in the system. **If a later phase ever
-stores anything about a participant, this decision has to be reopened before that
-happens, not after.**
-
----
-
-## 7. Accounts and credentials
-
-Full detail, including the transfer checklist, is in
-`docs/accounts-and-credentials.md` in the repository. Summary:
-
-| Thing | Where | Note |
-|---|---|---|
-| Mailbox | `researchethicsboardassistant@gmail.com` | Dedicated to this project. Two-step verification on. Confirmation and password-reset emails come from here, so whoever controls it can take over any account |
-| Supabase | Project `fzciyxuqzdashapkmcam`, `ca-central-1` | Region is permanent |
-| Anon key | Vercel, `.env.local`, every browser | Public by design. Row level security is the protection, not secrecy |
-| Service role key | Vercel only | **Bypasses row level security entirely.** Never in the repo, never in chat |
-| Anthropic key | Vercel only | Billing follows the key |
-| Repository | `irsaliendraDF/REBAssistant-` | Transfers to Future Civics |
-
-**Six things the receiving party must do, in order:**
-
-1. Take ownership of the mailbox, change its password, **regenerate its backup
-   codes**, and move two-step verification to their own phone
-2. Revoke and reissue the Gmail App Password, update it in Supabase
-3. Take ownership of the Supabase organisation, rotate the service role key
-4. Issue their own Anthropic key, update Vercel, revoke the old one
-5. Accept the GitHub repository transfer
-6. Re-link Vercel and verify every environment variable, prefixes included
-
-Step 1 is the one people skip. Until the backup codes are regenerated, the
-outgoing party still holds ten working bypasses of two-step verification, no
-matter what the password is.
-
-Step 6 has already bitten this project once: the `NEXT_PUBLIC_` prefix is what
-makes a value visible to the browser, and omitting it fails silently and totally.
-
----
-
-## 8. Running it
+### 8.7 Running the project
 
 ```
 npm install
 npm run dev          # http://localhost:3000
-npm test             # 351 tests
+npm test             # 380 tests
 npm run build
-npm run ingest:plan  # what ingestion would do, touches nothing
+npm run ingest:plan  # shows what ingestion would do, changes nothing
 npm run ingest       # loads the knowledge base, needs the service role key
 ```
 
-The app runs with no credentials at all. With no database it uses the in-memory
-store and says so on screen; with no model key it produces the document structure
-from the researcher's own answers and says that too. Nothing fails obscurely
-because something is missing.
+The application runs without credentials. With no database it uses the in-memory store and says so on screen. With no model key it produces the document structure from the researcher's own answers and says so. Environment variables are documented in `.env.local.example`. The reasoning behind the design decisions is recorded in `docs/decisions.md`, which should be read before any structural change.
 
-Environment variables are documented in `.env.local.example`.
+### 8.8 Recorded history
 
----
+1. **Exposed API key.** An Anthropic key was exposed in a chat transcript during the build. It was rotated the same day and the exposed key was verified as revoked.
+2. **First-click error.** The first click of a sign-in link once returned a server error that disappeared on refresh. The cause was clock skew between Supabase and the validating server, and `lib/data/clock-skew.ts` accommodates it.
+3. **Three addresses.** One researcher reached the product under three addresses, discovered on 21 September 2026 by counting the accounts after a sign-in complaint whose cause was the paused project. Two of the three accounts were deleted after a full snapshot of the database was written to disk. The finding is that a sign-in which cannot fail cannot be diagnosed. Sign-in was reported as faulty repeatedly between 26 August and 21 September and three fixes were applied to it before the accounts were counted. See `docs/sign-in-spec.md` and `docs/sign-in-spec-2.md`.
+4. **Confirmation emails reported as expired.** On 16 October 2026 the Confirm signup template held the Reset Password wording (Section 4.3). The application converts any "expired", "invalid", "used" or "not found" error into one message (`lib/auth/callback.ts`), so the screen could not state the cause, and the actual error was found by printing it temporarily. Should it recur, the Supabase Auth log is read first and the template in each entry is then checked.
 
-## 9. Where the reasoning is written down
+## 9. Support
 
-`docs/decisions.md` is the important file in this repository. It records why
-things are the way they are, including the decisions that look like mistakes
-until you know the reason: why olive is never used for text, why "I am not sure"
-counts as yes, why the app terms block the dashboard instead of sitting above it,
-why there is no Canadian region pin on Vercel, why drafts are versioned.
+DigitalFlow Consulting Inc. remains available to the recipients after the final invoice for any issue with the tool.
 
-Anyone taking this over should read it before changing anything structural. It is
-kept current with the code, in the same commits.
-
----
-
-## 10. Known history worth stating
-
-Three things a new maintainer would otherwise rediscover the hard way.
-
-**An Anthropic API key was exposed in a chat transcript during the build.** It
-was rotated the same day and the exposed key was verified dead. Noted because a
-handover should say what happened, not only what the current state is.
-
-**The first click of a magic link used to return a server error, and a refresh
-worked.** That was clock skew: Supabase stamps the session token with its own
-clock, and a validating server fractionally behind reads the timestamp as the
-future. `lib/data/clock-skew.ts` waits it out. If similar symptoms appear
-elsewhere, that is the first thing to check.
-
-**One researcher reached this product under three email addresses.** Found on
-21 September 2026 by counting the accounts, after a sign-in complaint that turned
-out to be the paused project above. Sign-in created an account for any address
-typed into it, and nothing failed when it did: the person signed in successfully,
-to an empty dashboard, which from their side is indistinguishable from lost work.
-Two of the three were deleted on 21 September, with a full snapshot of the
-database taken to disk first, and the work under the Dalhousie address the
-researcher asked to keep was left alone.
-
-**The lesson is not about that researcher.** A sign-in that cannot fail cannot be
-debugged. Sign-in was reported as broken repeatedly between 26 August and
-21 September, and three separate fixes were shipped to it, before anybody counted
-the accounts and found that two of the reports had a different cause entirely. The fix is in `app/(auth)/actions.ts` and
-`lib/auth/send-outcome.ts`. `docs/sign-in-spec.md` records the first pass and
-`docs/sign-in-spec-2.md` the move to a password, both including what was
-considered and rejected, and what was verified rather than assumed.
-
----
-
-## 11. Contact
-
-Built by Irene Saliendra, DigitalFlow Consulting.
-Client contact: Shakara, Future Civics.
-Test material provided by KJ.
+Irene Saliendra
+Founder and Principal Consultant, DigitalFlow Consulting Inc.
+irene@digitalflowconsulting.ca
