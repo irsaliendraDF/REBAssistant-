@@ -616,7 +616,8 @@ export async function saveSectionEdit(formData: FormData) {
  *
  * Recorded per project rather than per person: a researcher who ran one study
  * two years ago has not thereby handled the consent form for this one. The
- * wording is stored verbatim, because it is a placeholder and will change.
+ * wording is stored verbatim, with its version, so it can be reconstructed if it
+ * is ever changed.
  */
 export async function acknowledgeParticipantDisclosure(formData: FormData) {
   const session = await getSession()

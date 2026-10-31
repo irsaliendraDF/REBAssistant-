@@ -7,6 +7,12 @@ import {
 } from '@/lib/intake/questions'
 import type { AnswerMap, Draft, Project } from '@/lib/data/types'
 
+import {
+  APP_TERMS_DISCLOSURE,
+  DISCLOSURE_VERSION,
+  PARTICIPANT_CONSENT_DISCLOSURE,
+} from '@/lib/disclosure/text'
+
 import { assembleDraft } from './assemble'
 
 /**
@@ -210,14 +216,18 @@ describe('guardrail 8: disclosure matches what actually happened', () => {
     expect(blocked.map((section) => section.number)).toEqual(['2.13'])
   })
 
-  it('says no participant-identifying information was stored', () => {
+  it('states what the tool is designed to do about participant information, not that none was entered', () => {
     const draft = assembleDraft({ project: project(), answers: {}, now: NOW })
-    expect(draft.disclosure).toMatch(/No participant-identifying information/i)
+    expect(draft.disclosure).toMatch(/designed not to receive or store participant-identifying information/i)
+    expect(draft.disclosure).not.toMatch(/was entered into or stored by the tool/i)
   })
 
-  it('marks the wording as a placeholder pending review', () => {
+  it('no longer carries the placeholder label, and its version says so', () => {
     const draft = assembleDraft({ project: project(), answers: {}, now: NOW })
-    expect(draft.disclosure).toMatch(/placeholder/i)
+    expect(draft.disclosure).not.toMatch(/placeholder/i)
+    expect(DISCLOSURE_VERSION).not.toMatch(/placeholder/i)
+    expect(APP_TERMS_DISCLOSURE).not.toMatch(/placeholder/i)
+    expect(PARTICIPANT_CONSENT_DISCLOSURE).not.toMatch(/placeholder/i)
   })
 })
 
@@ -277,6 +287,48 @@ describe('persisted drafts', () => {
     })
 
     expect(result.disclosure).toContain('2.3')
+  })
+
+  it('does not attest that the research team reviewed the text, which the tool cannot know', () => {
+    const result = assembleDraft({
+      project: project(),
+      answers: SOME_ANSWERS,
+      drafts: [draftRecord()],
+      now: NOW,
+    })
+
+    expect(result.disclosure).not.toMatch(/was reviewed by the research team/i)
+    expect(result.disclosure).toMatch(/responsible for reviewing all AI-assisted text/i)
+  })
+
+  it('names the model that wrote the text, read from the drafts', () => {
+    const result = assembleDraft({
+      project: project(),
+      answers: SOME_ANSWERS,
+      drafts: [draftRecord()],
+      now: NOW,
+    })
+
+    expect(result.disclosure).toContain('Model used: claude-opus-5.')
+  })
+
+  it('names every model when sections were drafted by different ones', () => {
+    const result = assembleDraft({
+      project: project(),
+      answers: SOME_ANSWERS,
+      drafts: [
+        draftRecord(),
+        draftRecord({ id: 'd2', formSection: '2.2', modelVersion: 'another-model' }),
+      ],
+      now: NOW,
+    })
+
+    expect(result.disclosure).toContain('Models used: another-model, claude-opus-5.')
+  })
+
+  it('names no model when nothing was drafted by one', () => {
+    const result = assembleDraft({ project: project(), answers: SOME_ANSWERS, now: NOW })
+    expect(result.disclosure).not.toMatch(/Models? used/)
   })
 
   it('does not name a section the researcher wrote themselves', () => {

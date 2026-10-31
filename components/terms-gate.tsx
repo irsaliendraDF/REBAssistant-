@@ -10,10 +10,9 @@ import { APP_TERMS_DISCLOSURE } from '@/lib/disclosure/text'
  * first. There is no dismiss and no "later": the only way past is to accept,
  * because the alternative is using a tool whose terms you have not seen.
  *
- * The accepted text is stored verbatim on the consent record, not a version
+ * The accepted text is stored verbatim on the consent record, alongside a version
  * number, so what a researcher agreed to can be reconstructed after the wording
- * is replaced. It will be replaced: this text is a placeholder pending review by
- * the research ethics team.
+ * changes. The wording was settled on 2026-10-31 (see `lib/disclosure/text.ts`).
  */
 export function TermsGate() {
   return (

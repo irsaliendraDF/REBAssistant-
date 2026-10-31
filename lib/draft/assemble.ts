@@ -11,7 +11,7 @@ import {
   printSectionFor,
   toolCoveredNumbers,
 } from '@/lib/form/dalhousie-questions'
-import { allQuestions, visibleSections } from '@/lib/intake/questions'
+import { allQuestions, isQuestionVisible, visibleSections } from '@/lib/intake/questions'
 import { boardDisclosure } from '@/lib/disclosure/text'
 import { suggestCompanionDocuments, type CompanionDocument } from '@/lib/documents/companions'
 import type { AnswerMap, Draft, Project } from '@/lib/data/types'
@@ -175,7 +175,20 @@ export function assembleDraft({ project, answers, drafts, now }: AssembleInput):
     institution: project.institution,
     generatedAt: (now ?? new Date()).toISOString(),
     sections,
-    disclosure: boardDisclosure({ aiAssistedSections, routedSections }),
+    disclosure: boardDisclosure({
+      aiAssistedSections,
+      routedSections,
+      // The models recorded on the drafts being shown, read from the drafts and not
+      // from configuration, so the line names what actually wrote the text.
+      modelVersions: [
+        ...new Set(
+          (drafts ?? [])
+            .filter((draft) => draft.aiGenerated && aiAssistedSections.includes(draft.formSection))
+            .map((draft) => draft.modelVersion)
+            .filter((version): version is string => Boolean(version)),
+        ),
+      ].sort(),
+    }),
     incompleteSections: sections
       .filter((section) => section.status === 'no_answers_yet')
       .map((section) => section.number),
@@ -486,6 +499,7 @@ function administrativeParts(context: PartsContext): DraftPart[] {
 function unansweredFor(number: string, answers: AnswerMap): string[] {
   return allQuestions()
     .filter((question) => formNumbersFor(question.key).includes(number))
+    .filter((question) => isQuestionVisible(question, answers))
     .filter((question) => !answers[question.key] || answers[question.key].trim().length === 0)
     .map((question) => question.label)
 }
@@ -495,6 +509,8 @@ function answersByFormNumber(answers: AnswerMap): Record<string, SourceAnswer[]>
   const grouped: Record<string, SourceAnswer[]> = {}
 
   for (const question of allQuestions()) {
+    // An answer kept from before its question was hidden again does not print.
+    if (!isQuestionVisible(question, answers)) continue
     const answer = answers[question.key]
     if (!answer || answer.trim().length === 0) continue
 
@@ -528,6 +544,7 @@ function sourcesBySection(answers: AnswerMap): Record<string, SourceAnswer[]> {
   const grouped: Record<string, SourceAnswer[]> = {}
 
   for (const question of allQuestions()) {
+    if (!isQuestionVisible(question, answers)) continue
     const answer = answers[question.key]
     if (!answer || answer.trim().length === 0) continue
     if (!question.formSection) continue

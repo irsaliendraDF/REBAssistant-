@@ -7,54 +7,56 @@
  *   (a) The app's own terms. The researcher consents to how the tool uses their
  *       inputs.
  *   (b) The participant consent forms the tool generates. Participants are told
- *       an AI-assisted system handles their data.
+ *       an AI-assisted system helped prepare what they are asked to agree to.
  *   (c) The application itself. The Board is told it was prepared with AI
  *       assistance.
  *
- * PLACEHOLDER WORDING. Every string below is a first draft for Shakara to
- * replace. She knows what a Board expects to see and this tool does not. What is
- * not placeholder is the mechanism: surface (c) is generated from what was
- * actually drafted, so it cannot drift from the truth.
+ * Wording settled on 2026-10-31, replacing the placeholder text of August. Irene
+ * Saliendra reviewed and approved it. It has not been read by a research ethics
+ * expert, which `docs/handover.md` records as an open item.
  *
- * That last point is the whole reason `drafts.ai_generated` is `not null`. A
+ * What is written here is limited to what the tool can know. It does not say
+ * that anyone reviewed the text, because the tool cannot observe a review, and it
+ * does not say that no participant information was entered, because the tool can
+ * only state what it is designed to do and what the researcher was told. Where a
+ * sentence does state a human act, it is one the research team makes.
+ *
+ * Surface (c) is generated from what was actually drafted, so it cannot drift
+ * from the truth. That is the whole reason `drafts.ai_generated` is `not null`. A
  * disclosure that says "parts of this were AI-assisted" when nothing was, or
  * stays silent when something was, is worse than none: it teaches a Board that
  * the disclosure carries no information.
+ *
+ * Whenever any string below changes, change `DISCLOSURE_VERSION`. Consent events
+ * are append-only and record which version each researcher agreed to.
  */
 
-export const DISCLOSURE_VERSION = 'placeholder-2026-08'
+export const DISCLOSURE_VERSION = 'v1-2026-10'
 
 /** Surface (a). Shown in the app, before the researcher's inputs are used. */
 export const APP_TERMS_DISCLOSURE = `
-Research Ethics Board Assistant uses an AI model to help draft parts of your application and to
-point out what may be missing.
+Research Ethics Board Assistant uses an artificial intelligence model to help draft parts of your application and to point out what may be missing.
 
-What that means in practice:
+What this means:
 
-- What you type here is sent to an AI model operated by Anthropic, in order to produce draft text
-  and suggestions. Those requests are processed outside Canada.
-- Before anything is sent, it passes through an automatic check that removes contact details and
-  refuses to send identifiable personal information such as health numbers or dates of birth.
-- You are asked not to enter any participant's name, contact details or identifiers anywhere in
-  this tool. It is not designed to hold them and does not store them.
-- Every draft it produces is recorded as AI-assisted, so your final application can say so
-  accurately.
-- Nothing is submitted anywhere on your behalf. The tool does not decide whether your research is
-  approved. Your Research Ethics Board does that.
-
-This wording is a placeholder pending review.
+- What you enter is sent to an AI model operated by Anthropic, to produce draft text and suggestions. These requests may be processed outside Canada.
+- Before anything is sent, it passes through an automatic check. The check removes email addresses, telephone numbers, postal codes and street addresses, and refuses to send health numbers, Social Insurance Numbers or dates of birth.
+- Do not enter any participant's name, contact details or other identifying information anywhere in this tool. The tool has no place for it, and anything you type in an answer is saved with that answer.
+- Every section the model helps to draft is recorded as AI-assisted, so that your application can say so accurately.
+- The tool does not submit anything on your behalf and does not decide whether your research is approved. That decision belongs to your Research Ethics Board.
+- You remain responsible for everything in your application, including text the tool drafted. Read each draft closely before you use it.
 `.trim()
 
-/** Surface (b). Inserted into generated participant consent forms. */
+/**
+ * Surface (b). Inserted into generated participant consent forms.
+ *
+ * The first paragraph says the research team reviewed and edited the text. The
+ * team must confirm that is true before the form is used, and the tool cannot.
+ */
 export const PARTICIPANT_CONSENT_DISCLOSURE = `
-How this document was prepared: parts of this consent form and of the research ethics application
-behind it were drafted with the help of an artificial intelligence system, reviewed and edited by
-the research team before you received it. The research team is responsible for its content.
+How this document was prepared: an artificial intelligence system helped the research team draft parts of this consent form and of the research ethics application behind it. The research team reviewed and edited the text and is responsible for its content.
 
-Your own information is not given to that system. Information that could identify you is not
-entered into it, and it is not used to make any decision about you.
-
-This wording is a placeholder pending review.
+The AI system was given a description of the study. It was not given information about you. Participants' names, contact details and other identifying information are not entered into it, and it is not used to make any decision about you.
 `.trim()
 
 export interface DisclosureFacts {
@@ -62,7 +64,8 @@ export interface DisclosureFacts {
   aiAssistedSections: string[]
   /** Sections deliberately not drafted by the tool, per guardrail 4. */
   routedSections: string[]
-  modelVersion?: string
+  /** The models that actually produced the AI-assisted text, as recorded on the drafts. */
+  modelVersions?: string[]
 }
 
 /**
@@ -89,13 +92,17 @@ export function boardDisclosure(facts: DisclosureFacts): string {
       '',
       `Sections drafted with AI assistance: ${facts.aiAssistedSections.join(', ')}.`,
       '',
-      'All AI-assisted text was reviewed by the research team, which is responsible for the ' +
-        'accuracy and completeness of this application. The research team confirmed the tool’s ' +
-        'reading of the methodology before any drafting took place.',
+      'The research team confirmed the tool’s reading of the methodology before any drafting ' +
+        'took place. The research team is responsible for reviewing all AI-assisted text and for ' +
+        'the accuracy and completeness of this application.',
     )
 
-    if (facts.modelVersion) {
-      lines.push('', `Model used: ${facts.modelVersion}.`)
+    const models = facts.modelVersions ?? []
+    if (models.length > 0) {
+      lines.push(
+        '',
+        `${models.length === 1 ? 'Model' : 'Models'} used: ${models.join(', ')}.`,
+      )
     }
   }
 
@@ -111,9 +118,8 @@ export function boardDisclosure(facts: DisclosureFacts): string {
 
   lines.push(
     '',
-    'No participant-identifying information was entered into or stored by the tool.',
-    '',
-    '[This disclosure wording is a placeholder pending review by the research ethics team.]',
+    'The tool is designed not to receive or store participant-identifying information, and the ' +
+      'research team was instructed not to enter any.',
   )
 
   return lines.join('\n')
