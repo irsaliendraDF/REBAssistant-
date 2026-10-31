@@ -5,16 +5,20 @@
 **Date:** 31 October 2026
 **Production address:** https://reb-assistant.vercel.app
 
-## 1. Summary
+## 1. Executive summary
 
-The Research Ethics Board Assistant is built, deployed and operating in production. Account creation, email confirmation, password reset and AI-assisted drafting were each verified on the live system in October 2026, and the Word download follows the numbered questions of the Dalhousie Research Ethics Board application form. The tool asks every numbered question on the form, other than 2.11, which is completed on the form, and 2.13, which is routed to a person.
+The Research Ethics Board Assistant is built, deployed and operating in production. A researcher at Dalhousie University answers questions about a study and receives a Word document laid out under the numbered questions of the Dalhousie Research Ethics Board application form. The tool does not make ethics determinations and does not submit anything. The researcher completes and submits the application.
 
-The handover is complete when the account transfers in Section 6 are finished. Until then DigitalFlow Consulting retains working access to every account described here. This document contains no passwords, keys or recovery codes. The one login that must be transferred is supplied separately, as described in Section 5.
+**Status.** Account creation, email confirmation, password reset and AI-assisted drafting were each verified on the live system in October 2026. The tool asks every numbered question on the form, other than 2.11, which is completed on the form, and 2.13, which is routed to a person. All 392 automated tests pass.
 
-Two matters remain open and require a decision by the recipients:
+**What the recipients receive.** Control of the project mailbox, the project repository and the Supabase database and sign-in service, together with the steps for operating and transferring each (Sections 4 to 6). This document and the separate Logins document hold every step required, so no call with DigitalFlow is needed. This document contains no passwords, keys or recovery codes.
+
+**Support.** DigitalFlow Consulting remains available as on-call support after the final invoice (Section 9).
+
+**Two decisions are the recipients' to make.**
 
 1. **Database plan.** The database project pauses itself when idle, which has interrupted service twice. A paid plan removes the behaviour (Section 7).
-2. **Repository.** The complete code and history now reside in the project repository, `researchethicsboardassistant-commits/REBassistant`. Production continues to deploy from the DigitalFlow repository until Vercel is linked to the project repository (Section 6, step 6). Both hold the same code as of 31 October 2026, and both are public (Section 5.2).
+2. **Expert review of the wording.** The disclosure wording and the intake questions are first drafts that have not been read by a research ethics expert, and a read before researchers rely on the tool is recommended (Section 7).
 
 ## 2. Purpose and limits of the tool
 
@@ -74,6 +78,8 @@ The Supabase project pauses itself after a period without use. This occurred on 
 
 ### 4.5 Interruption of drafting
 
+Vercel is maintained by DigitalFlow, to whom a drafting fault is reported. The steps below apply to whoever operates the Vercel project.
+
 1. In Vercel, open the project, then **Settings**, then **Environment Variables**, and confirm that `ANTHROPIC_API_KEY` is present.
 2. Confirm that the Anthropic account holds credit, since billing follows the key.
 3. When the key is replaced, the new value is entered in Vercel and the project is redeployed. A key is never placed in the repository or in an email.
@@ -100,14 +106,14 @@ To remove an empty account, select **Authentication**, then **Users**, then the 
 
 ### 5.1 Accounts
 
-Section 5.4 shows how these accounts connect to one another.
+Section 5.4 shows how these accounts connect to one another. This document and the separate Logins document hold every step needed to operate and transfer them, so no call with DigitalFlow is required.
 
 | Account | Held by | Transfer method |
 |---|---|---|
-| Project mailbox, researchethicsboardassistant@gmail.com | DigitalFlow | Ownership transfer on a call with Irene Saliendra (Section 6, step 1) |
+| Project mailbox, researchethicsboardassistant@gmail.com | DigitalFlow | Ownership transfer using the Logins document (Section 6, step 1) |
 | Supabase (database and sign-in) | The project's own organisation, signed in to through the project GitHub account | Follows the project mailbox. The recipients are added as owners of the organisation, and the service key is rotated |
-| Anthropic key (AI drafting) | DigitalFlow key, held in Vercel | The recipients issue their own key and revoke the existing key |
-| Vercel (hosting) | DigitalFlow account | Linked to the transferred repository, then every setting is verified |
+| Anthropic key (AI drafting) | DigitalFlow key, held in Vercel | Remains in place while DigitalFlow maintains the hosting. If the recipients take over hosting, they issue their own key and the existing key is revoked (Section 6, step 4) |
+| Vercel (hosting) | DigitalFlow account | Remains with DigitalFlow, which maintains it. The recipients may create their own account if they choose (Section 5.2 and Section 6, step 6) |
 | GitHub repository | DigitalFlow account, and the project repository | The code resides in the project repository. The recipients are added as its owners (Section 6, step 5) |
 
 ### 5.2 Repositories
@@ -116,8 +122,10 @@ Two repositories exist, and on 31 October 2026 the complete code and history wer
 
 | Repository | Content | Visibility |
 |---|---|---|
-| `researchethicsboardassistant-commits/REBassistant` | **The project repository.** The complete code and history, including the final changes of 31 October 2026. It is not yet connected to production | Public |
-| `irsaliendraDF/REBAssistant-` | The DigitalFlow repository. Vercel deploys production from it until step 6 of Section 6. A change pushed to only one of the two repositories leaves the other behind | Public |
+| `researchethicsboardassistant-commits/REBassistant` | **The project repository.** The complete code and history, including the final changes of 31 October 2026. It is not connected to production unless the recipients take over hosting | Public |
+| `irsaliendraDF/REBAssistant-` | The DigitalFlow repository. Vercel deploys production from it. A change pushed to only one of the two repositories leaves the other behind | Public |
+
+DigitalFlow maintains both repositories and the Vercel hosting for as long as the tool remains a side project, and keeps the project repository in step with the DigitalFlow repository. The recipients may instead create their own Vercel account and link it to the project repository, which is the appropriate course if the tool becomes a commercial product. Vercel asks for a telephone number to verify a new account. That decision is the recipients' to make, and it changes nothing about how the tool runs.
 
 The project repository belongs to a GitHub account registered through Google sign-in with the project mailbox. Control of that mailbox therefore carries control of that GitHub account, and the repository follows the mailbox to the recipients in step 1 of Section 6.
 
@@ -127,7 +135,7 @@ Both repositories contain no credentials, which was verified across the full his
 
 No password, key or recovery code is recorded in this document, because a document of this kind is forwarded, copied and retained, and a credential recorded in it remains available to every holder of any copy.
 
-The one password that must be transferred, that of the project mailbox, is supplied in a separate document titled "Logins", shared with the recipients by name. Two-step verification on that mailbox sends its code to the telephone of Irene Saliendra, so the password alone does not grant access. Moving two-step verification to the recipients' own telephone is completed together on a call. The Logins document is deleted once step 1 of Section 6 is complete.
+The one password that must be transferred, that of the project mailbox, is supplied in a separate document titled "Logins", shared with the recipients by name. Two-step verification on that mailbox sends its code to the telephone of Irene Saliendra, so the password alone does not grant access. The recipients' first sign-in needs one verification code from that telephone, which Irene Saliendra supplies on request, and the recipients then move two-step verification to their own telephone. The Logins document is deleted once step 1 of Section 6 is complete.
 
 All other accounts are transferred by invitation, by ownership transfer or by the issue of new keys, and require no password from DigitalFlow. The mailbox's backup codes are never shared. The recipients regenerate them in step 1, which voids every code held by DigitalFlow.
 
@@ -158,7 +166,7 @@ Two views follow. The first shows who must sign in to what, which decides who ca
                            Database, sign-in, email
                            templates and the service key
 
-  Separate accounts, held by DigitalFlow until steps 4 and 6 of Section 6:
+  Separate accounts, held by DigitalFlow and transferred only if the recipients take over hosting (steps 4 and 6 of Section 6):
 
   Vercel (hosting)         deploys from  irsaliendraDF/REBAssistant-
   Vercel (hosting)         holds         the Supabase keys and the Anthropic key
@@ -202,19 +210,19 @@ Two views follow. The first shows who must sign in to what, which decides who ca
 
 ## 6. Transfer procedure
 
-Until every step is complete, DigitalFlow retains working access. This reflects the nature of shared accounts and is not a deficiency of any party. The only remedy is to complete the list, in this order:
+Until every step is complete, DigitalFlow retains working access. This reflects the nature of shared accounts and is not a deficiency of any party. The only remedy is to complete steps 1 to 5, in this order. Step 6 is at the recipients' option.
 
 1. **Mailbox.** Take ownership, change the password, regenerate the backup codes and move two-step verification to the recipients' own telephone. This step is the one most often omitted. Until the backup codes are regenerated, DigitalFlow holds ten working bypasses of two-step verification, regardless of the password.
 2. **Mail credential in Supabase.** In the Google account, revoke the existing App Password and issue a new one. Enter it in Supabase under **Authentication**, then **Emails**, then the SMTP settings.
-3. **Supabase.** The project belongs to the project's own organisation, and its dashboard is signed in to through the project GitHub account, so control of the mailbox in step 1 carries control of it. Add the recipients' own accounts as owners of that organisation, rotate the service role key and update it in Vercel.
-4. **Anthropic.** Issue a new key in the recipients' own Anthropic account, enter it in Vercel and revoke the existing key.
+3. **Supabase.** The project belongs to the project's own organisation, and its dashboard is signed in to through the project GitHub account, so control of the mailbox in step 1 carries control of it. Add the recipients' own accounts as owners of that organisation, rotate the service role key and update it in Vercel, which DigitalFlow does while it maintains the hosting.
+4. **Anthropic.** While DigitalFlow maintains the hosting, drafting runs on the DigitalFlow key. If the recipients take over hosting (step 6), they issue a new key in their own Anthropic account, enter it in their Vercel project and revoke the existing key.
 5. **GitHub.** The code already resides in the project repository, which is controlled through the project mailbox. Add the recipients' own GitHub accounts as owners of that repository, and set it to private unless public release of the code is intended.
-6. **Vercel.** Link the project to the project repository and verify every environment variable. The two variables beginning `NEXT_PUBLIC_` must retain that prefix, because omitting it fails silently and completely.
+6. **Vercel (optional).** Hosting remains with DigitalFlow, which maintains it. Should the recipients decide to operate the tool as a commercial product, they create their own Vercel account, link the project to the project repository and verify every environment variable. The two variables beginning `NEXT_PUBLIC_` must retain that prefix, because omitting it fails silently and completely. Step 4 then applies.
 
 ## 7. Open items and known limitations
 
 1. **Database plan.** The Supabase project pauses itself when idle and has interrupted service twice. The usage pattern of the tool, intensive use for a week followed by months of inactivity, is the least suited to this behaviour. A paid plan is recommended before researchers rely on the tool.
-2. **Repository ownership and visibility.** The project repository is public, and the recipients are added as its owners in step 5 of Section 6. Until step 6, production deploys from the DigitalFlow repository, so a change must be pushed to both repositories to reach production and remain in the project repository.
+2. **Repository ownership and visibility.** The project repository is public, and the recipients are added as its owners in step 5 of Section 6. Production deploys from the DigitalFlow repository, which DigitalFlow keeps in step with the project repository, so a change must be pushed to both to reach production and remain in the project repository.
 3. **Disclosure wording** in `lib/disclosure/text.ts` was settled on 31 October 2026 and carries version `v1-2026-10`. It has not been read by a research ethics expert, and a read by one before the tool is relied on is recommended. The wording avoids statements the tool cannot verify, such as that the research team reviewed the text.
 4. **Drafting prompt and intake questions** are first drafts. The 57 intake questions were written to cover every numbered question on the form, and their wording would benefit from review by the same expert. The drafting prompt enforces the guardrail against ethics determinations and should be read by a person who knows what a Board will not accept.
 5. **Gap analysis** is rule-based. A model-assisted pass would identify more omissions.
@@ -314,7 +322,7 @@ The application runs without credentials. With no database it uses the in-memory
 
 ## 9. Support
 
-DigitalFlow Consulting Inc. remains available to the recipients after the final invoice for any issue with the tool.
+DigitalFlow Consulting Inc. maintains the hosting and the DigitalFlow repository, and remains available to the recipients as on-call support after the final invoice, for any issue with the tool.
 
 Irene Saliendra
 Founder and Principal Consultant, DigitalFlow Consulting Inc.
