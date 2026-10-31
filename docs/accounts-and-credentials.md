@@ -91,14 +91,20 @@ this also moves the cost.
 
 ## GitHub and Vercel
 
-Repository `irsaliendraDF/REBAssistant-` and the Vercel project both sit under
-Irene Saliendra's personal accounts, per Section 12 of the build plan, and
-transfer to Future Civics.
+The Vercel project and the original repository `irsaliendraDF/REBAssistant-` sit
+under Irene Saliendra's personal accounts, per Section 12 of the build plan.
+
+**On 31 October 2026 the complete code and history were copied to the project
+repository, `researchethicsboardassistant-commits/REBassistant`.** That GitHub
+account was registered through Google sign-in with the project mailbox, so
+control of the mailbox carries control of the repository. Production still
+deploys from the original repository until Vercel is linked to the project one.
 
 ### At transfer
 
-Repository ownership transfers first, then the Vercel project is re-linked to the
-new owner so deployments continue. Environment variables do not travel with a
+The recipients are added as owners of the project repository, and it is set to
+private unless public release is intended. Then the Vercel project is re-linked
+to the project repository so deployments continue. Environment variables do not travel with a
 Vercel project transfer in every case, so check all of them afterwards, in
 particular that `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 still carry the `NEXT_PUBLIC_` prefix. Omitting it is silent and fatal: the
