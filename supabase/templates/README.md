@@ -86,8 +86,8 @@ asked : https://reb-assistant.vercel.app/callback?next=/reset-password
 So a `ConfirmationURL` link landed on the site root, which has no token handling,
 rather than on `/callback`. **Fix the allow-list anyway** under Authentication,
 URL Configuration, Redirect URLs, by adding `https://reb-assistant.vercel.app/**`.
-Nothing here depends on it any more, but leaving it wrong is a trap for whoever
-needs it next.
+**Done on 2026-10-31**: the list now shows three URLs. Nothing here depends on it,
+but it removes a trap for whoever needs `RedirectTo` next.
 
 **Three: the URL is hardcoded because the alternatives resolve wrongly.**
 `{{ .RedirectTo }}` renders whatever Supabase resolved, which is the bare Site URL

@@ -7,7 +7,7 @@
 
 ## 1. Summary
 
-The Research Ethics Board Assistant is built, deployed and operating in production. Account creation, email confirmation, password reset and AI-assisted drafting were each verified on the live system in October 2026, and the Word download follows the numbered questions of the Dalhousie Research Ethics Board application form.
+The Research Ethics Board Assistant is built, deployed and operating in production. Account creation, email confirmation, password reset and AI-assisted drafting were each verified on the live system in October 2026, and the Word download follows the numbered questions of the Dalhousie Research Ethics Board application form. The tool asks every numbered question on the form, other than 2.11, which is completed on the form, and 2.13, which is routed to a person.
 
 The handover is complete when the account transfers in Section 6 are finished. Until then DigitalFlow Consulting retains working access to every account described here. This document contains no passwords, keys or recovery codes. The one login that must be transferred is supplied separately, as described in Section 5.
 
@@ -24,10 +24,11 @@ The tool does not review research, approve or exempt it, or submit anything to D
 
 ## 3. The Word document
 
-Each answer is printed under the form's own number (2.3.1, 2.3.2 and so on), so that content is transferred to the form question by question. Three conventions apply:
+Each answer is printed under the form's own number (2.3.1, 2.3.2 and so on), so that content is transferred to the form question by question. Four conventions apply:
 
-- **"Not asked by this tool. Complete on the form."** The tool does not ask 15 of the form's 54 numbered questions.
-- **"No answer captured yet."** The tool asks the question and the researcher has not answered it. Where one form number holds answers to several of the tool's questions, any that remain unanswered are listed beneath the answers.
+- **"Complete on the form."** Section 1 and question 2.11 are completed on the form by the research team. The tool never asks for people's details, and 2.11 is completed from the researcher's saved details.
+- **"No answer captured yet."** The tool asks the question and the researcher has not answered it. A question that applies only to some studies, such as a consent exception or the use of deception, is introduced by a yes or no question, and its follow-up is asked only when the answer is yes. A yes or no question answered no prints as a ticked box, which is how the form's own "Not applicable" box is answered. Where one form number holds answers to several of the tool's questions, any that remain unanswered are listed beneath the answers.
+- **"Not drafted by this tool. Prepare it directly."** Section 2.13, research involving Indigenous peoples, is routed to a person and is never written by the tool.
 - **Section 1** (names, Banner numbers, telephone numbers, supervisor) is printed as labelled blanks. The tool is designed never to ask for personal details.
 
 ## 4. Operation and troubleshooting
@@ -102,7 +103,7 @@ To remove an empty account, select **Authentication**, then **Users**, then the 
 | Account | Held by | Transfer method |
 |---|---|---|
 | Project mailbox, researchethicsboardassistant@gmail.com | DigitalFlow | Ownership transfer on a call with Irene Saliendra (Section 6, step 1) |
-| Supabase (database and sign-in) | DigitalFlow organisation | Invitation as owners, then rotation of the service key |
+| Supabase (database and sign-in) | The project's own organisation, signed in to through the project GitHub account | Follows the project mailbox. The recipients are added as owners of the organisation, and the service key is rotated |
 | Anthropic key (AI drafting) | DigitalFlow key, held in Vercel | The recipients issue their own key and revoke the existing key |
 | Vercel (hosting) | DigitalFlow account | Linked to the transferred repository, then every setting is verified |
 | GitHub repository | DigitalFlow account, and the project repository | The code resides in the project repository. The recipients are added as its owners (Section 6, step 5) |
@@ -134,7 +135,7 @@ Until every step is complete, DigitalFlow retains working access. This reflects 
 
 1. **Mailbox.** Take ownership, change the password, regenerate the backup codes and move two-step verification to the recipients' own telephone. This step is the one most often omitted. Until the backup codes are regenerated, DigitalFlow holds ten working bypasses of two-step verification, regardless of the password.
 2. **Mail credential in Supabase.** In the Google account, revoke the existing App Password and issue a new one. Enter it in Supabase under **Authentication**, then **Emails**, then the SMTP settings.
-3. **Supabase.** Accept ownership, rotate the service role key and update it in Vercel.
+3. **Supabase.** The project belongs to the project's own organisation, and its dashboard is signed in to through the project GitHub account, so control of the mailbox in step 1 carries control of it. Add the recipients' own accounts as owners of that organisation, rotate the service role key and update it in Vercel.
 4. **Anthropic.** Issue a new key in the recipients' own Anthropic account, enter it in Vercel and revoke the existing key.
 5. **GitHub.** The code already resides in the project repository, which is controlled through the project mailbox. Add the recipients' own GitHub accounts as owners of that repository, and set it to private unless public release of the code is intended.
 6. **Vercel.** Link the project to the project repository and verify every environment variable. The two variables beginning `NEXT_PUBLIC_` must retain that prefix, because omitting it fails silently and completely.
@@ -143,13 +144,11 @@ Until every step is complete, DigitalFlow retains working access. This reflects 
 
 1. **Database plan.** The Supabase project pauses itself when idle and has interrupted service twice. The usage pattern of the tool, intensive use for a week followed by months of inactivity, is the least suited to this behaviour. A paid plan is recommended before researchers rely on the tool.
 2. **Repository ownership and visibility.** The project repository is public, and the recipients are added as its owners in step 5 of Section 6. Until step 6, production deploys from the DigitalFlow repository, so a change must be pushed to both repositories to reach production and remain in the project repository.
-3. **Unasked form questions.** The tool never asks 15 of the form's 54 questions. Asking them would require new intake questions and is not a layout change.
-4. **Disclosure wording** in `lib/disclosure/text.ts` is placeholder text awaiting review by a research ethics expert. It is labelled as a placeholder in the product.
-5. **Drafting prompt and intake questions** are first drafts. The drafting prompt enforces the guardrail against ethics determinations and should be read by a person who knows what a Board will not accept.
-6. **Gap analysis** is rule-based. A model-assisted pass would identify more omissions.
-7. **Email is sent from a Gmail account.** This is suitable for a test group and unsuitable for a cohort, because the account is limited to roughly 500 messages a day. A domain controlled by the recipients, with SPF and DKIM records, is the replacement.
-8. **Residency.** Canadian residency was agreed to apply to participant data. The application runs in the hosting provider's default region while the database is in Montreal. The commitment holds because no participant data is stored anywhere in the system. If a later phase stores participant data, this decision must be reopened beforehand.
-9. **Redirect URLs.** The Supabase list holds `https://reb-assistant.vercel.app/callback` and the local address. Adding `https://reb-assistant.vercel.app/**` is recommended, and nothing depends on it at present.
+3. **Disclosure wording** in `lib/disclosure/text.ts` was settled on 31 October 2026 and carries version `v1-2026-10`. It has not been read by a research ethics expert, and a read by one before the tool is relied on is recommended. The wording avoids statements the tool cannot verify, such as that the research team reviewed the text.
+4. **Drafting prompt and intake questions** are first drafts. The 57 intake questions were written to cover every numbered question on the form, and their wording would benefit from review by the same expert. The drafting prompt enforces the guardrail against ethics determinations and should be read by a person who knows what a Board will not accept.
+5. **Gap analysis** is rule-based. A model-assisted pass would identify more omissions.
+6. **Email is sent from a Gmail account.** This is suitable for a test group and unsuitable for a cohort, because the account is limited to roughly 500 messages a day. A domain controlled by the recipients, with SPF and DKIM records, is the replacement.
+7. **Residency.** Canadian residency was agreed to apply to participant data. The application runs in the hosting provider's default region while the database is in Montreal. The commitment holds because no participant data is stored anywhere in the system. If a later phase stores participant data, this decision must be reopened beforehand.
 
 ## 8. Technical reference
 
@@ -189,7 +188,7 @@ Nothing in this sequence advances automatically.
 
 `lib/form/dalhousie-questions.ts` lists the form's 54 numbered questions and states under which of them each of the tool's questions prints. Where a section covers two or more questions, the AI draft is requested as numbered answers (`[[2.3.1]]` on its own line before each answer), and `splitDraft()` in `lib/draft/assemble.ts` reads them back. If the model disregards the format, the text prints whole under its section and nothing is lost.
 
-Two answers print in a section other than the one in which they are asked: dependence on the researcher (asked at 2.3, printed at 2.5.1) and incentives (asked at 2.4, printed at 2.6.5). The 15 unasked questions are fixed by a test in `lib/form/dalhousie-questions.test.ts`. The numbers 2.7.2 and 2.8.2 are generated by Word's list numbering and were read through Word.
+Two answers print in a section other than the one in which they are asked: dependence on the researcher (asked at 2.3, printed at 2.5.1) and incentives (asked at 2.4, printed at 2.6.5). A test in `lib/form/dalhousie-questions.test.ts` fixes that every numbered question is asked, other than 2.11 and 2.13. Five yes or no questions (phased review, a consent exception, deception, incidental findings and genetic counselling) gate their follow-ups through a `showWhen` function on the question. A follow-up that is not shown is not required, counted, printed or drafted, and an answer kept from before its gate was changed back to no does not print. The numbers 2.7.2 and 2.8.2 are generated by Word's list numbering and were read through Word.
 
 ### 8.4 Sign-in
 
@@ -199,7 +198,7 @@ Sign-in uses an email address and a password, on four screens: sign in, create a
 - **Signing in never creates an account.** Until 21 September 2026 any address typed into the sign-in box created an account silently, and one researcher reached the product under three addresses with work under two of them.
 - **Supabase does not disclose whether an address has an account.** A wrong password and an unregistered address return the same `invalid_credentials`, so that the sign-in box cannot be used to discover which addresses are registered. The only two places that can prevent a second account are the sign-up screen and the empty dashboard, which names the signed-in address.
 - **Applications belong to the address under which they were started.** There is no merging or linking of accounts.
-- **Both emails carry a `token_hash` link**, which holds its own proof and does not depend on a cookie in the browser that requested it. The link's address is written into each template (`https://reb-assistant.vercel.app/callback?token_hash=…&type=signup` or `type=recovery`), because Supabase's own redirect value resolves incorrectly while the Redirect URLs list is incomplete and produces a link with no question mark. If the domain changes, both template files change with it. See `supabase/templates/README.md`.
+- **Both emails carry a `token_hash` link**, which holds its own proof and does not depend on a cookie in the browser that requested it. The link's address is written into each template (`https://reb-assistant.vercel.app/callback?token_hash=…&type=signup` or `type=recovery`), because Supabase's own redirect value resolved incorrectly while the Redirect URLs list was incomplete and produced a link with no question mark. The list now holds `https://reb-assistant.vercel.app/**`, added on 31 October 2026, and the links remain hardcoded, so they do not depend on it. If the domain changes, both template files change with it. See `supabase/templates/README.md`.
 - **Removed mechanisms.** The magic link, the six-digit code and the browser reset were each a remedy for a way in which a sign-in link can fail. A password fails in none of those ways.
 
 ### 8.5 Technology
@@ -212,7 +211,7 @@ Sign-in uses an email address and a password, on four screens: sign in, create a
 | Model | Anthropic, `claude-opus-5`, set in `lib/env.ts` and overridable by `ANTHROPIC_MODEL` |
 | Export | `docx` |
 | Hosting | Vercel |
-| Tests | Vitest, 382 passing |
+| Tests | Vitest, 392 passing |
 
 The data layer sits behind an interface, `DataStore` (`lib/data/types.ts`), with an in-memory implementation used when no database is configured and a Supabase implementation. Both are held to the same behaviour, which is what makes the ownership rules testable.
 
@@ -227,7 +226,7 @@ The cost is that unusual wording may fall outside a fixed mapping. If test users
 ```
 npm install
 npm run dev          # http://localhost:3000
-npm test             # 382 tests
+npm test             # 392 tests
 npm run build
 npm run ingest:plan  # shows what ingestion would do, changes nothing
 npm run ingest       # loads the knowledge base, needs the service role key

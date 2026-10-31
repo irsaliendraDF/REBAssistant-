@@ -66,8 +66,11 @@ blank in local development.
 
 ### At transfer
 
-Supabase organisation ownership moves, then the receiving party rotates the
-service role key and updates it in Vercel. Rotating it is a two-minute job and
+The project belongs to the project's own Supabase organisation, which is signed
+in to through the project's GitHub account. That account was registered through
+Google sign-in with the project mailbox, so control of the mailbox carries
+control of the project. The receiving party is added as owners of the
+organisation, rotates the service role key and updates it in Vercel. Rotating it is a two-minute job and
 invalidates the outgoing party's copy.
 
 ---
@@ -120,9 +123,11 @@ Six things the receiving party must do, in this order:
 1. Take ownership of the mailbox, change its password, **regenerate its backup
    codes**, and move two-step verification to their own phone
 2. Revoke and reissue the Gmail App Password, update it in Supabase
-3. Take ownership of the Supabase organisation, rotate the service role key
+3. Add themselves as owners of the project's own Supabase organisation, reached
+   through the project GitHub account, and rotate the service role key
 4. Issue their own Anthropic key, update Vercel, revoke the old one
-5. Accept the GitHub repository transfer
+5. Add themselves as owners of the project repository, and set it to private
+   unless public release is intended
 6. Re-link Vercel and verify every environment variable, prefixes included
 
 Until all six are done, the previous holder retains working access. That is not a

@@ -32,8 +32,8 @@ The document is then deleted.
 
 ## 4. Accounts that require no password
 
-- **Supabase.** DigitalFlow invites the recipients as owners, and they sign in with their own accounts.
-- **GitHub.** DigitalFlow transfers the repository, and the recipients accept the transfer.
+- **Supabase.** The project belongs to the project's own organisation, which is signed in to through the project GitHub account. Control of the mailbox carries control of that account. The recipients are added as owners and sign in with their own accounts.
+- **GitHub.** The code resides in the project repository, controlled through the same account. The recipients' own accounts are added as owners.
 - **Vercel.** The recipients link the project to the transferred repository and verify every setting.
 - **Anthropic key.** The recipients issue their own key and replace the existing key in Vercel.
 - **Backup codes.** These are never shared. The recipients generate their own in step 1.
