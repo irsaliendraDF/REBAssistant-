@@ -14,7 +14,7 @@ The handover is complete when the account transfers in Section 6 are finished. U
 Two matters remain open and require a decision by the recipients:
 
 1. **Database plan.** The database project pauses itself when idle, which has interrupted service twice. A paid plan removes the behaviour (Section 7).
-2. **Repository destination.** The working repository is public and its destination account is to be designated (Section 5).
+2. **Repository.** The complete code and history now reside in the project repository, `researchethicsboardassistant-commits/REBassistant`. Production continues to deploy from the DigitalFlow repository until Vercel is linked to the project repository (Section 6, step 6). Both repositories are public (Section 5.2).
 
 ## 2. Purpose and limits of the tool
 
@@ -27,7 +27,7 @@ The tool does not review research, approve or exempt it, or submit anything to D
 Each answer is printed under the form's own number (2.3.1, 2.3.2 and so on), so that content is transferred to the form question by question. Three conventions apply:
 
 - **"Not asked by this tool. Complete on the form."** The tool does not ask 15 of the form's 54 numbered questions.
-- **"No answer captured yet."** The tool asks the question and the researcher has not answered it.
+- **"No answer captured yet."** The tool asks the question and the researcher has not answered it. Where one form number holds answers to several of the tool's questions, any that remain unanswered are listed beneath the answers.
 - **Section 1** (names, Banner numbers, telephone numbers, supervisor) is printed as labelled blanks. The tool is designed never to ask for personal details.
 
 ## 4. Operation and troubleshooting
@@ -105,20 +105,20 @@ To remove an empty account, select **Authentication**, then **Users**, then the 
 | Supabase (database and sign-in) | DigitalFlow organisation | Invitation as owners, then rotation of the service key |
 | Anthropic key (AI drafting) | DigitalFlow key, held in Vercel | The recipients issue their own key and revoke the existing key |
 | Vercel (hosting) | DigitalFlow account | Linked to the transferred repository, then every setting is verified |
-| GitHub repository | DigitalFlow account | Transferred to the account designated by the recipients |
+| GitHub repository | DigitalFlow account, and the project repository | The code resides in the project repository. The recipients are added as its owners (Section 6, step 5) |
 
 ### 5.2 Repositories
 
-Two repositories were identified on 31 October 2026.
+Two repositories exist, and on 31 October 2026 the complete code and history (63 commits, 152 files) were copied from the DigitalFlow repository to the project repository.
 
 | Repository | Content | Visibility |
 |---|---|---|
-| `irsaliendraDF/REBAssistant-` | The working code. Every change to the tool, including the changes of 31 October 2026, is committed here, and Vercel deploys from it | Public |
-| `researchethicsboardassistant-commits/REBassistant` | Empty. It contains no commits and is not connected to production | Public |
+| `researchethicsboardassistant-commits/REBassistant` | **The project repository.** The complete code and history, including the final changes of 31 October 2026. It is not yet connected to production | Public |
+| `irsaliendraDF/REBAssistant-` | The DigitalFlow repository. Vercel deploys production from it until step 6 of Section 6, and it does not contain the most recent commits | Public |
 
-The second repository belongs to a GitHub account registered through Google sign-in with the project mailbox. Control of that mailbox therefore carries control of that GitHub account.
+The project repository belongs to a GitHub account registered through Google sign-in with the project mailbox. Control of that mailbox therefore carries control of that GitHub account, and the repository follows the mailbox to the recipients in step 1 of Section 6.
 
-The working repository contains no credentials. The file `.env.local` is excluded from version control, and only `.env.local.example` is tracked. The repository does contain the Supabase project identifier and the mailbox address, which are not secrets. The repository is public, and the recommended course is to set it to private when it is transferred, unless public release of the code is intended.
+Both repositories contain no credentials, which was verified across the full history on 31 October 2026. The file `.env.local` is excluded from version control, and only `.env.local.example` is tracked. The repository does contain the Supabase project identifier and the mailbox address, which are not secrets. The repository is public, and the recommended course is to set it to private when it is transferred, unless public release of the code is intended.
 
 ### 5.3 Credentials
 
@@ -136,21 +136,20 @@ Until every step is complete, DigitalFlow retains working access. This reflects 
 2. **Mail credential in Supabase.** In the Google account, revoke the existing App Password and issue a new one. Enter it in Supabase under **Authentication**, then **Emails**, then the SMTP settings.
 3. **Supabase.** Accept ownership, rotate the service role key and update it in Vercel.
 4. **Anthropic.** Issue a new key in the recipients' own Anthropic account, enter it in Vercel and revoke the existing key.
-5. **GitHub.** Accept the repository transfer to the designated account.
-6. **Vercel.** Link the project to the transferred repository and verify every environment variable. The two variables beginning `NEXT_PUBLIC_` must retain that prefix, because omitting it fails silently and completely.
+5. **GitHub.** The code already resides in the project repository, which is controlled through the project mailbox. Add the recipients' own GitHub accounts as owners of that repository, and set it to private unless public release of the code is intended.
+6. **Vercel.** Link the project to the project repository and verify every environment variable. The two variables beginning `NEXT_PUBLIC_` must retain that prefix, because omitting it fails silently and completely.
 
 ## 7. Open items and known limitations
 
 1. **Database plan.** The Supabase project pauses itself when idle and has interrupted service twice. The usage pattern of the tool, intensive use for a week followed by months of inactivity, is the least suited to this behaviour. A paid plan is recommended before researchers rely on the tool.
-2. **Transfer destination for the repository** and its visibility (Section 5.2).
+2. **Repository ownership and visibility.** The project repository is public, and the recipients are added as its owners in step 5 of Section 6. Until step 6, production deploys from the DigitalFlow repository, which does not contain the most recent commits.
 3. **Unasked form questions.** The tool never asks 15 of the form's 54 questions. Asking them would require new intake questions and is not a layout change.
-4. **A missing answer can be masked.** Where two questions print under one form number, a missing answer is not flagged once the other is answered. At 2.5.1 the dependence answer can mask an unanswered consent-method question.
-5. **Disclosure wording** in `lib/disclosure/text.ts` is placeholder text awaiting review by a research ethics expert. It is labelled as a placeholder in the product.
-6. **Drafting prompt and intake questions** are first drafts. The drafting prompt enforces the guardrail against ethics determinations and should be read by a person who knows what a Board will not accept.
-7. **Gap analysis** is rule-based. A model-assisted pass would identify more omissions.
-8. **Email is sent from a Gmail account.** This is suitable for a test group and unsuitable for a cohort, because the account is limited to roughly 500 messages a day. A domain controlled by the recipients, with SPF and DKIM records, is the replacement.
-9. **Residency.** Canadian residency was agreed to apply to participant data. The application runs in the hosting provider's default region while the database is in Montreal. The commitment holds because no participant data is stored anywhere in the system. If a later phase stores participant data, this decision must be reopened beforehand.
-10. **Redirect URLs.** The Supabase list holds `https://reb-assistant.vercel.app/callback` and the local address. Adding `https://reb-assistant.vercel.app/**` is recommended, and nothing depends on it at present.
+4. **Disclosure wording** in `lib/disclosure/text.ts` is placeholder text awaiting review by a research ethics expert. It is labelled as a placeholder in the product.
+5. **Drafting prompt and intake questions** are first drafts. The drafting prompt enforces the guardrail against ethics determinations and should be read by a person who knows what a Board will not accept.
+6. **Gap analysis** is rule-based. A model-assisted pass would identify more omissions.
+7. **Email is sent from a Gmail account.** This is suitable for a test group and unsuitable for a cohort, because the account is limited to roughly 500 messages a day. A domain controlled by the recipients, with SPF and DKIM records, is the replacement.
+8. **Residency.** Canadian residency was agreed to apply to participant data. The application runs in the hosting provider's default region while the database is in Montreal. The commitment holds because no participant data is stored anywhere in the system. If a later phase stores participant data, this decision must be reopened beforehand.
+9. **Redirect URLs.** The Supabase list holds `https://reb-assistant.vercel.app/callback` and the local address. Adding `https://reb-assistant.vercel.app/**` is recommended, and nothing depends on it at present.
 
 ## 8. Technical reference
 
@@ -213,7 +212,7 @@ Sign-in uses an email address and a password, on four screens: sign in, create a
 | Model | Anthropic, `claude-opus-5`, set in `lib/env.ts` and overridable by `ANTHROPIC_MODEL` |
 | Export | `docx` |
 | Hosting | Vercel |
-| Tests | Vitest, 380 passing |
+| Tests | Vitest, 382 passing |
 
 The data layer sits behind an interface, `DataStore` (`lib/data/types.ts`), with an in-memory implementation used when no database is configured and a Supabase implementation. Both are held to the same behaviour, which is what makes the ownership rules testable.
 
@@ -228,7 +227,7 @@ The cost is that unusual wording may fall outside a fixed mapping. If test users
 ```
 npm install
 npm run dev          # http://localhost:3000
-npm test             # 380 tests
+npm test             # 382 tests
 npm run build
 npm run ingest:plan  # shows what ingestion would do, changes nothing
 npm run ingest       # loads the knowledge base, needs the service role key
