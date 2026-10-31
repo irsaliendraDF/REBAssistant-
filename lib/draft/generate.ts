@@ -8,6 +8,11 @@ import {
   isGenerationBlocked,
   wordLimitFor,
 } from '@/lib/form/dalhousie-sections'
+import {
+  FORM_QUESTIONS,
+  printSectionFor,
+  toolCoveredNumbers,
+} from '@/lib/form/dalhousie-questions'
 import { allQuestions } from '@/lib/intake/questions'
 import { guidanceForSection } from '@/lib/kb/retrieve'
 
@@ -54,7 +59,10 @@ How to write:
   fabricated methodology detail in a research ethics application is a serious problem,
   and a visible gap is not.
 - Plain language. A Board member outside the discipline should follow it.
-- No headings, no preamble, no "Here is the draft". Return only the section text.
+- No headings, no preamble, no "Here is the draft". Return only the section text. The one
+  exception: if you are asked to put a question number in double square brackets, such as
+  [[2.3.1]], before each answer, do that exactly. It marks where each answer belongs on the
+  form and is not a heading.
 
 What you must never do:
 
@@ -172,6 +180,7 @@ export async function draftSection({
                 '',
               ]
             : []),
+          ...questionLayoutInstruction(formSection),
           `Write section ${formSection} of the application from these answers.`,
         ].join('\n'),
       },
@@ -203,13 +212,43 @@ export async function draftSection({
   }
 }
 
+/**
+ * Asks for the draft in the form's own numbered questions.
+ *
+ * The form asks several numbered questions inside most sections, and the Word
+ * document prints each answer under its number. Only the questions the
+ * researcher's answers feed are listed, so the model is never invited to write an
+ * answer to a question nobody asked. A section with one such question needs no
+ * markers. If the model ignores the format, the text still prints whole; nothing
+ * is lost, only the layout.
+ */
+export function questionLayoutInstruction(formSection: string): string[] {
+  const covered = toolCoveredNumbers(formSection)
+  if (covered.length < 2) return []
+
+  const labels = covered.map((number) => {
+    const question = FORM_QUESTIONS.find((candidate) => candidate.number === number)
+    return `${number} ${question?.label ?? ''}`.trim()
+  })
+
+  return [
+    'The form asks this section as separate numbered questions. Write one answer for each of the',
+    'following, and put its number in double square brackets on a line of its own immediately',
+    'before that answer, for example [[' + covered[0] + ']]. Write nothing outside these answers.',
+    'Where the researcher has not addressed a question, state the gap in one sentence under its number.',
+    '',
+    ...labels.map((label) => `- ${label}`),
+    '',
+  ]
+}
+
 /** The researcher's answers that feed one section, in the order they were asked. */
 export function sourcesFor(
   formSection: string,
   answers: AnswerMap,
 ): { question: string; answer: string }[] {
   return allQuestions()
-    .filter((question) => question.formSection === formSection)
+    .filter((question) => printSectionFor(question.key, question.formSection) === formSection)
     .map((question) => {
       const answer = answers[question.key]
       if (!answer || answer.trim().length === 0) return null

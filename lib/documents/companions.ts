@@ -261,7 +261,7 @@ export function suggestCompanionDocuments(
         'One document per channel: the poster, the email, the social post, the verbal script.',
         'What the study is about, what taking part involves, and roughly how long it takes.',
         answered(answers, 'intake.2_4.incentive')
-          ? 'The compensation, stated the same way you described it at 2.4.'
+          ? 'The compensation, stated the same way you described it at 2.6.5.'
           : 'Whether there is any compensation.',
         'That taking part is voluntary, and who to contact with questions.',
         'The Research Ethics Board file number, once you have it.',

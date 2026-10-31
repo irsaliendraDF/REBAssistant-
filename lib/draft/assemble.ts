@@ -5,6 +5,12 @@ import {
   wordLimitFor,
   type FormSection,
 } from '@/lib/form/dalhousie-sections'
+import {
+  formNumbersFor,
+  formQuestionsFor,
+  printSectionFor,
+  toolCoveredNumbers,
+} from '@/lib/form/dalhousie-questions'
 import { allQuestions, visibleSections } from '@/lib/intake/questions'
 import { boardDisclosure } from '@/lib/disclosure/text'
 import { suggestCompanionDocuments, type CompanionDocument } from '@/lib/documents/companions'
@@ -43,6 +49,36 @@ export type DraftSectionStatus =
 export interface SourceAnswer {
   question: string
   answer: string
+  /** For a choice question: every option, with the one the researcher picked marked. */
+  choices?: { label: string; selected: boolean }[]
+}
+
+export type DraftPartStatus =
+  /** The researcher's own answers sit under this form question. */
+  | 'answered'
+  /** Drafted with model assistance from those answers. */
+  | 'drafted'
+  /** The tool asks this form question and the researcher has not answered it yet. */
+  | 'unanswered'
+  /** The tool never asks this form question. The researcher completes it on the form. */
+  | 'not_asked'
+  /** Completed on the form by design, such as names and contact details. */
+  | 'for_form'
+  /** Guardrail 4. The tool will not write this. */
+  | 'routed'
+
+/**
+ * One numbered question on the Dalhousie form, with whatever the tool holds for
+ * it. The Word document prints these in the form's own order so the researcher
+ * can copy across number to number.
+ */
+export interface DraftPart {
+  number: string
+  label: string
+  status: DraftPartStatus
+  answers: SourceAnswer[]
+  /** Model-drafted text for this question, when the draft was split by question. */
+  drafted?: string
 }
 
 export interface DraftSection {
@@ -66,6 +102,8 @@ export interface DraftSection {
    * answers, and the disclosure has to name it either way.
    */
   blockedFromDrafting: boolean
+  /** The form's numbered questions within this section, in the form's order. */
+  parts: DraftPart[]
 }
 
 export interface DraftPackage {
@@ -108,7 +146,11 @@ export function assembleDraft({ project, answers, drafts, now }: AssembleInput):
   const sections = FORM_SECTIONS.filter(
     (section) => !section.conditional || applicable.has(section.number),
   ).map((section) =>
-    buildSection(section, sources[section.number] ?? [], flags, project, bySection.get(section.number)),
+    buildSection(section, sources[section.number] ?? [], flags, project, bySection.get(section.number), {
+      byNumber: answersByFormNumber(answers),
+      answers,
+      project,
+    }),
   )
 
   const aiAssistedSections = sections
@@ -169,13 +211,13 @@ function applicableSections(answers: AnswerMap): Set<string> {
   return numbers
 }
 
-function buildSection(
+function buildSectionBase(
   section: FormSection,
   sources: SourceAnswer[],
   flags: { indigenous: boolean; communityEngaged: boolean },
   project: Project,
   draft?: Draft,
-): DraftSection {
+): Omit<DraftSection, 'parts'> {
   const wordLimit = wordLimitFor(section.number)
   const blocked = isGenerationBlocked(section.number, flags)
 
@@ -277,6 +319,184 @@ function buildSection(
   }
 }
 
+interface PartsContext {
+  byNumber: Record<string, SourceAnswer[]>
+  answers: AnswerMap
+  project: Project
+}
+
+/**
+ * A section together with the form's numbered questions inside it.
+ *
+ * Added 31 October 2026 after KJ's feedback that the Word download groups answers
+ * by section while the form asks numbered questions, so every answer was copied
+ * across by hand. The section-level fields are unchanged; `parts` is what the
+ * document prints.
+ */
+function buildSection(
+  section: FormSection,
+  sources: SourceAnswer[],
+  flags: { indigenous: boolean; communityEngaged: boolean },
+  project: Project,
+  draft: Draft | undefined,
+  context: PartsContext,
+): DraftSection {
+  const base = buildSectionBase(section, sources, flags, project, draft)
+  const covered = toolCoveredNumbers(section.number)
+
+  // A drafted section may arrive split by form question. Split it here, so the
+  // screen shows clean prose and the document can print each piece under its own
+  // number. Older drafts carry no markers and stay whole.
+  if (base.status === 'ai_drafted') {
+    const split = splitDraft(base.content, covered)
+    const wordLimit = base.wordLimit
+    const wordCount = countWords(split.text)
+    return {
+      ...base,
+      content: split.text,
+      wordCount,
+      overWordLimit: wordLimit !== undefined && wordCount > wordLimit,
+      parts: buildParts(section, context, split.parts),
+    }
+  }
+
+  return { ...base, parts: buildParts(section, context, {}) }
+}
+
+const PART_MARKER = /^\[\[(\d+(?:\.\d+)+)\]\][ \t]*$/gm
+
+/**
+ * Splits drafted prose by form question.
+ *
+ * The drafting prompt asks the model to put `[[2.3.1]]` on its own line before
+ * each answer where a section holds more than one question the tool covers. This
+ * reads those markers back. With no markers and exactly one covered question, the
+ * whole text belongs to that question. With no markers and several, the text
+ * stays whole and the document prints it once for the section, so a model that
+ * ignores the format costs layout and never loses text.
+ */
+export function splitDraft(
+  content: string,
+  covered: string[],
+): { text: string; parts: Record<string, string> } {
+  const markers = [...content.matchAll(PART_MARKER)]
+
+  if (markers.length === 0) {
+    return { text: content, parts: covered.length === 1 ? { [covered[0]]: content } : {} }
+  }
+
+  const parts: Record<string, string> = {}
+  markers.forEach((marker, index) => {
+    const start = (marker.index ?? 0) + marker[0].length
+    const end = index + 1 < markers.length ? (markers[index + 1].index ?? content.length) : content.length
+    const text = content.slice(start, end).trim()
+    if (text) parts[marker[1]] = parts[marker[1]] ? `${parts[marker[1]]}\n\n${text}` : text
+  })
+
+  const text = content.replace(PART_MARKER, '').replace(/\n{3,}/g, '\n\n').trim()
+  return { text, parts }
+}
+
+function buildParts(
+  section: FormSection,
+  context: PartsContext,
+  drafted: Record<string, string>,
+): DraftPart[] {
+  if (section.number === '1') return administrativeParts(context)
+
+  const covered = new Set(toolCoveredNumbers(section.number))
+
+  return formQuestionsFor(section.number).map((question) => {
+    if (section.generation === 'routed_to_human') {
+      return { number: question.number, label: question.label, status: 'routed' as const, answers: [] }
+    }
+    if (section.generation === 'from_record') {
+      return { number: question.number, label: question.label, status: 'for_form' as const, answers: [] }
+    }
+
+    const answers = context.byNumber[question.number] ?? []
+    const text = drafted[question.number]
+
+    return {
+      number: question.number,
+      label: question.label,
+      status: text
+        ? ('drafted' as const)
+        : answers.length > 0
+          ? ('answered' as const)
+          : covered.has(question.number)
+            ? ('unanswered' as const)
+            : ('not_asked' as const),
+      answers,
+      ...(text ? { drafted: text } : {}),
+    }
+  })
+}
+
+/**
+ * Section 1 holds names, Banner numbers, phone numbers and attestations. The tool
+ * is built never to ask for people's details, so only the title and the Board the
+ * researcher preferred are filled; the rest print as labelled blanks.
+ */
+function administrativeParts(context: PartsContext): DraftPart[] {
+  const boardQuestion = allQuestions().find((question) => question.key === 'triage.board')
+  const boardAnswer = context.answers['triage.board']
+  const board = boardQuestion && boardAnswer ? readable(boardQuestion, boardAnswer) : null
+
+  const parts: DraftPart[] = [
+    {
+      number: 'Title',
+      label: 'Project title',
+      status: 'answered',
+      answers: [{ question: 'Working title', answer: context.project.title }],
+    },
+    board
+      ? {
+          number: 'Board',
+          label: 'Preferred Research Ethics Board',
+          status: 'answered',
+          answers: [{ question: boardQuestion!.label, answer: board }],
+        }
+      : { number: 'Board', label: 'Preferred Research Ethics Board', status: 'for_form', answers: [] },
+  ]
+
+  const blanks: [string, string][] = [
+    ['1.1', 'Research team information'],
+    ['1.2', 'Academic and supervisor information'],
+    ['1.3', 'Other reviews'],
+    ['1.4', 'Funding'],
+    ['1.5', 'Attestations'],
+  ]
+  for (const [number, label] of blanks) {
+    parts.push({ number, label, status: 'for_form', answers: [] })
+  }
+
+  return parts
+}
+
+/** Every answer the researcher gave, grouped under the form question it prints at. */
+function answersByFormNumber(answers: AnswerMap): Record<string, SourceAnswer[]> {
+  const grouped: Record<string, SourceAnswer[]> = {}
+
+  for (const question of allQuestions()) {
+    const answer = answers[question.key]
+    if (!answer || answer.trim().length === 0) continue
+
+    for (const number of formNumbersFor(question.key)) {
+      const entry: SourceAnswer = { question: question.label, answer: readable(question, answer) }
+      if (question.type === 'choice' && question.options) {
+        entry.choices = question.options.map((option) => ({
+          label: option.label,
+          selected: option.value === answer,
+        }))
+      }
+      ;(grouped[number] ??= []).push(entry)
+    }
+  }
+
+  return grouped
+}
+
 function administrativeSection(project: Project): string {
   return [
     `Project title: ${project.title}`,
@@ -296,7 +516,13 @@ function sourcesBySection(answers: AnswerMap): Record<string, SourceAnswer[]> {
     if (!answer || answer.trim().length === 0) continue
     if (!question.formSection) continue
 
-    const list = (grouped[question.formSection] ??= [])
+    // The section the answer prints in, which is the section of its form question.
+    // Two questions are asked in one intake section and printed in another, so
+    // drafting must read them where they print.
+    const section = printSectionFor(question.key, question.formSection)
+    if (!section) continue
+
+    const list = (grouped[section] ??= [])
     list.push({ question: question.label, answer: readable(question, answer) })
   }
 
