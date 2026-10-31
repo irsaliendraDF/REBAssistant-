@@ -109,7 +109,7 @@ To remove an empty account, select **Authentication**, then **Users**, then the 
 
 ### 5.2 Repositories
 
-Two repositories exist, and on 31 October 2026 the complete code and history (63 commits, 152 files) were copied from the DigitalFlow repository to the project repository.
+Two repositories exist, and on 31 October 2026 the complete code and history were copied from the DigitalFlow repository to the project repository.
 
 | Repository | Content | Visibility |
 |---|---|---|
