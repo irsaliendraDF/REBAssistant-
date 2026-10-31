@@ -14,7 +14,7 @@ The handover is complete when the account transfers in Section 6 are finished. U
 Two matters remain open and require a decision by the recipients:
 
 1. **Database plan.** The database project pauses itself when idle, which has interrupted service twice. A paid plan removes the behaviour (Section 7).
-2. **Repository.** The complete code and history now reside in the project repository, `researchethicsboardassistant-commits/REBassistant`. Production continues to deploy from the DigitalFlow repository until Vercel is linked to the project repository (Section 6, step 6). Both repositories are public (Section 5.2).
+2. **Repository.** The complete code and history now reside in the project repository, `researchethicsboardassistant-commits/REBassistant`. Production continues to deploy from the DigitalFlow repository until Vercel is linked to the project repository (Section 6, step 6). Both hold the same code as of 31 October 2026, and both are public (Section 5.2).
 
 ## 2. Purpose and limits of the tool
 
@@ -114,7 +114,7 @@ Two repositories exist, and on 31 October 2026 the complete code and history wer
 | Repository | Content | Visibility |
 |---|---|---|
 | `researchethicsboardassistant-commits/REBassistant` | **The project repository.** The complete code and history, including the final changes of 31 October 2026. It is not yet connected to production | Public |
-| `irsaliendraDF/REBAssistant-` | The DigitalFlow repository. Vercel deploys production from it until step 6 of Section 6, and it does not contain the most recent commits | Public |
+| `irsaliendraDF/REBAssistant-` | The DigitalFlow repository. Vercel deploys production from it until step 6 of Section 6. A change pushed to only one of the two repositories leaves the other behind | Public |
 
 The project repository belongs to a GitHub account registered through Google sign-in with the project mailbox. Control of that mailbox therefore carries control of that GitHub account, and the repository follows the mailbox to the recipients in step 1 of Section 6.
 
@@ -142,7 +142,7 @@ Until every step is complete, DigitalFlow retains working access. This reflects 
 ## 7. Open items and known limitations
 
 1. **Database plan.** The Supabase project pauses itself when idle and has interrupted service twice. The usage pattern of the tool, intensive use for a week followed by months of inactivity, is the least suited to this behaviour. A paid plan is recommended before researchers rely on the tool.
-2. **Repository ownership and visibility.** The project repository is public, and the recipients are added as its owners in step 5 of Section 6. Until step 6, production deploys from the DigitalFlow repository, which does not contain the most recent commits.
+2. **Repository ownership and visibility.** The project repository is public, and the recipients are added as its owners in step 5 of Section 6. Until step 6, production deploys from the DigitalFlow repository, so a change must be pushed to both repositories to reach production and remain in the project repository.
 3. **Unasked form questions.** The tool never asks 15 of the form's 54 questions. Asking them would require new intake questions and is not a layout change.
 4. **Disclosure wording** in `lib/disclosure/text.ts` is placeholder text awaiting review by a research ethics expert. It is labelled as a placeholder in the product.
 5. **Drafting prompt and intake questions** are first drafts. The drafting prompt enforces the guardrail against ethics determinations and should be read by a person who knows what a Board will not accept.
